@@ -25,5 +25,3 @@ jobs:
       - run: pnpm test
       - name: Publish public SolGate packages
         run: pnpm -r --filter './packages/*' --filter '!@solgate/admin' publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
