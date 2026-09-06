@@ -159,3 +159,36 @@
   line-height:1;
   background:#0b1711;
 }
+
+/* Brand icons for the social and Solana modules. The existing text symbol remains as a fallback. */
+.module-card:has([data-toggle="wallet-info"]) .module-icon,
+.module-card:has([data-toggle="x-info"]) .module-icon,
+.module-card:has([data-toggle="telegram-info"]) .module-icon,
+.module-card:has([data-toggle="discord-info"]) .module-icon,
+.module-card:has([data-toggle="youtube-info"]) .module-icon{
+  font-size:0;
+  background-color:#0b1711;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:16px 16px;
+}
+
+.module-card:has([data-toggle="wallet-info"]) .module-icon{
+  background-image:url("https://cdn.simpleicons.org/solana/7cff4f");
+}
+
+.module-card:has([data-toggle="x-info"]) .module-icon{
+  background-image:url("https://cdn.simpleicons.org/x/7cff4f");
+}
+
+.module-card:has([data-toggle="telegram-info"]) .module-icon{
+  background-image:url("https://cdn.simpleicons.org/telegram/7cff4f");
+}
+
+.module-card:has([data-toggle="discord-info"]) .module-icon{
+  background-image:url("https://cdn.simpleicons.org/discord/7cff4f");
+}
+
+.module-card:has([data-toggle="youtube-info"]) .module-icon{
+  background-image:url("https://cdn.simpleicons.org/youtube/7cff4f");
+}
