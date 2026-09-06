@@ -1,13 +1,15 @@
-# Solana Allowlist
+# SolGate
 
-An open-source, modular allowlist and eligibility framework for Solana projects.
+**Open-source eligibility and access infrastructure for Solana.**
+
+SolGate is a modular, self-hosted framework for building allowlists, wallet verification, token gating, NFT eligibility, airdrop eligibility, community campaigns, and access-control flows on Solana.
 Embed it in **your own website**; run it on **your own server**; export **your own data**.
 No launchpad. No hosted platform. No lock-in.
 
 > **Status: alpha.** The architecture is stable and the test suite covers the eligibility engine, wallet auth, social-identity atomicity, referral accounting, FCFS ranking, OAuth redirect validation, snapshots and SSRF guards — but it has not had a third-party audit and has not run a production mint yet. See [docs/security.md](docs/security.md) and [CHANGELOG.md](CHANGELOG.md) before using it for real money.
 
 ```
-Solana Allowlist SDK
+SolGate SDK
         │
         ├── Wallet Signature          (SIWS-style nonce + ed25519)
         ├── Token Holding Check       (SPL + Token-2022 via RPC)
@@ -29,11 +31,11 @@ Project Website ──▶ <AllowlistWidget/> or <script> embed ──▶ users c
 
 Works for NFT mints, token launches, presales and community campaigns — the same engine, different requirement sets and allocation rules.
 
-## Why: eliminate launchpad lock-in
+## Why SolGate?
 
 Today most Solana projects run allowlists on hosted launchpads or "quest" platforms. That trade looks free but isn't:
 
-| With a hosted launchpad | With this framework |
+| With a hosted launchpad | With SolGate |
 |---|---|
 | Your community registers on *their* domain, under *their* brand | Users never leave your site; the widget inherits your fonts and colours |
 | Wallet + social data lives in their database; exports are partial or paywalled | You own the database (a SQLite file or your Postgres) and every export format |
@@ -42,7 +44,7 @@ Today most Solana projects run allowlists on hosted launchpads or "quest" platfo
 | Pricing, terms and availability change under you | MIT-licensed code you run on a $5 VPS, Vercel, Cloudflare Workers or Deno |
 | Vendor outage on mint day = your outage | Your infra, your uptime |
 
-The goal of this project is to make the self-hosted path *easier* than the hosted one: one `npx` to start the API, one component (or one `<script>` tag) to embed, one admin page to run the campaign.
+The goal of SolGate is to make the self-hosted path *easier* than the hosted one: one `npx` to start the API, one component (or one `<script>` tag) to embed, one admin page to run the campaign.
 
 ## Packages
 

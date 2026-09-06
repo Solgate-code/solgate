@@ -65,8 +65,11 @@ const moduleForProvider: Record<Provider, string> = { x: "x-verify", discord: "d
  * On callback we verify the requirement and redirect to `return` with ?allowlist=<key>:<ok|error>&msg=…
  */
 /**
- * Only allow redirecting back to: a relative path, the API's own origin, a CORS
- * origin, or an explicitly allowed origin. Anything else is an open redirect.
+ * Only allow redirecting back to: a relative path, the API's own origin, an
+ * explicitly listed CORS origin, or an explicitly allowed return origin.
+ * A wildcard CORS policy never widens OAuth redirects: embedding from any
+ * origin is not equivalent to trusting any origin as an authentication return
+ * destination.
  */
 export function resolveReturnUrl(raw: string | undefined, cfg: NormalizedConfig): URL | null {
   const base = new URL(cfg.baseUrl);
@@ -77,11 +80,9 @@ export function resolveReturnUrl(raw: string | undefined, cfg: NormalizedConfig)
     return null;
   }
   if (u.protocol !== "https:" && u.protocol !== "http:") return null;
-  const allowed = new Set<string>([base.origin, ...(cfg.allowedReturnOrigins ?? []), ...(Array.isArray(cfg.corsOrigins) ? cfg.corsOrigins : [])]);
-  if (allowed.has(u.origin)) return u;
-  // corsOrigins "*" means "any site may embed the widget", so any https origin may be a return target.
-  if (cfg.corsOrigins === "*" && u.protocol === "https:") return u;
-  return null;
+  const corsOrigins = Array.isArray(cfg.corsOrigins) ? cfg.corsOrigins : [];
+  const allowed = new Set<string>([base.origin, ...(cfg.allowedReturnOrigins ?? []), ...corsOrigins]);
+  return allowed.has(u.origin) ? u : null;
 }
 
 export function registerOAuthRoutes(

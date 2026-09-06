@@ -5,8 +5,11 @@
   "license": "MIT",
   "type": "module",
   "main": "./dist/embed.global.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsup src/embed.tsx --format iife --global-name SolanaAllowlist --minify --clean && cp ../react/src/styles.css dist/styles.css",
+    "build": "tsup src/embed.tsx --format iife --global-name SolGate --minify --clean && cp ../react/src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
