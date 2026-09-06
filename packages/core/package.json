@@ -1,6 +1,6 @@
 {
   "name": "@solgate/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Framework-agnostic types, eligibility engine, allocation, Merkle tree and export utilities for Solana allowlists.",
   "license": "MIT",
   "type": "module",
