@@ -134,3 +134,28 @@
     width:100%;
   }
 }
+.module-title-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.module-title-row h3{
+  margin:0;
+}
+
+.module-icon{
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 28px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--green);
+  font-size:.85rem;
+  font-weight:800;
+  line-height:1;
+  background:#0b1711;
+}
