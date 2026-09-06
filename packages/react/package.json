@@ -7,20 +7,39 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
     "./styles.css": "./dist/styles.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom && cp src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": { "react": ">=18", "react-dom": ">=18" },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
   "dependencies": {
     "@solana-allowlist/core": "workspace:*",
     "@wallet-standard/app": "^1.0.1",
     "@wallet-standard/base": "^1.0.1",
     "bs58": "^6.0.0"
   },
-  "devDependencies": { "@types/react": "^18.3.11", "@types/react-dom": "^18.3.0", "react": "^18.3.1", "react-dom": "^18.3.1" }
+  "devDependencies": {
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Solgate-code/solana-allowlist.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/Solgate-code/solana-allowlist"
 }

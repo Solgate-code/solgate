@@ -7,11 +7,21 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
-    "./node": { "import": "./dist/node.js", "types": "./dist/node.d.ts" }
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./node": {
+      "import": "./dist/node.js",
+      "types": "./dist/node.d.ts"
+    }
   },
-  "bin": { "solana-allowlist": "./dist/cli.js" },
-  "files": ["dist"],
+  "bin": {
+    "solana-allowlist": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts src/node.ts src/cli.ts --format esm --dts --clean",
     "dev": "tsx watch src/cli.ts",
@@ -34,5 +44,11 @@
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.7.4",
     "tsx": "^4.19.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Solgate-code/solana-allowlist.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/Solgate-code/solana-allowlist"
 }
