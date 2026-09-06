@@ -1,6 +1,6 @@
 {
   "name": "@solgate/react",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Embeddable React allowlist widget + headless client/hooks for Solana projects.",
   "license": "MIT",
   "type": "module",

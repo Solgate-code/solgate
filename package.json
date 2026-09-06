@@ -1,7 +1,7 @@
 {
   "name": "solgate",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Open-source, modular allowlist & eligibility framework for Solana projects. Embed in any site. No launchpad lock-in.",
   "license": "MIT",
   "packageManager": "pnpm@9.12.0",
