@@ -1,6 +1,6 @@
 {
   "name": "@solgate/embed",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Drop-in <script> embed of the allowlist widget for sites that don't use React (Webflow, Framer, WordPress, plain HTML).",
   "license": "MIT",
   "type": "module",
