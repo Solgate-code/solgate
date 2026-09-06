@@ -1,14 +1,14 @@
 {
-  "name": "solana-allowlist",
+  "name": "solgate",
   "private": true,
   "version": "0.1.0",
-  "description": "Open-source, modular allowlist & eligibility framework for Solana projects. Embed in any site. No launchpad lock-in.",
+  "description": "Open-source, modular allowlist & eligibility framework for Solana projects. Self-hosted, embeddable, and launchpad-independent.",
   "license": "MIT",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "build": "pnpm -r --filter './packages/*' build",
-    "dev:server": "pnpm --filter @solana-allowlist/server dev",
-    "dev:admin": "pnpm --filter @solana-allowlist/admin dev",
+    "dev:server": "pnpm --filter @solgate/server dev",
+    "dev:admin": "pnpm --filter @solgate/admin dev",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Solgate-code/solana-allowlist.git"
+    "url": "https://github.com/Solgate-code/solgate.git"
   },
-  "homepage": "https://github.com/Solgate-code/solana-allowlist"
+  "homepage": "https://github.com/Solgate-code/solgate"
 }
