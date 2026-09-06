@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="SolGate module setup documentation for Solana eligibility and allowlist campaigns.">
+  <title>Modules — SolGate</title>
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+
+    <a class="brand" href="index.html">
+      <img
+        class="brand-logo"
+        src="https://avatars.githubusercontent.com/u/325536215?v=4"
+        alt=""
+        aria-hidden="true"
+      >
+      <span>SolGate</span>
+    </a>
+
+    <div class="links">
+      <a href="getting-started.html">Getting Started</a>
+      <a href="modules.html">Modules</a>
+      <a href="security.html">Security</a>
+      <a href="https://github.com/Solgate-code/solgate">GitHub</a>
+      <a href="https://www.npmjs.com/~solgate">npm</a>
+    </div>
+
+  </div>
+</nav>
+
+
+<main>
+
+<section class="hero">
+  <div class="wrap">
+
+    <div class="eyebrow">
+      SolGate Modules
+    </div>
+
+    <h1>
+      Build the verification flow your project needs.
+    </h1>
+
+    <p>
+      SolGate modules can be combined to create allowlists,
+      token-gated experiences, NFT eligibility checks,
+      community campaigns and other Solana access workflows.
+    </p>
+
+  </div>
+</section>
+
+
+<section class="section">
+
+  <div class="wrap">
+
+    <h2>Verification Modules</h2>
+
+    <p class="section-intro">
+      Click <strong>Info</strong> on any module to see the required
+      setup steps. Code examples include a Copy button so developers
+      can quickly reuse the configuration.
+    </p>
+
+
+    <div class="module-grid">
+
+
+      <!-- WALLET SIGNATURE -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Core
+            </div>
+
+            <h3>
+              Solana Wallet Signature
+            </h3>
+
+            <p class="muted">
+              Verify that the participant controls the Solana wallet
+              connected to your application.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="wallet-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Off-chain signature
+          </span>
+
+          <span class="badge">
+            No SOL payment
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="wallet-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Add Solana wallet connection to your frontend.
+            </li>
+
+            <li>
+              Request a server-generated nonce from SolGate.
+            </li>
+
+            <li>
+              Ask the wallet to sign the verification message.
+            </li>
+
+            <li>
+              Send the signature to the SolGate backend.
+            </li>
+
+            <li>
+              SolGate verifies the Ed25519 signature and wallet ownership.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="wallet-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="wallet-env">SESSION_SECRET=replace_with_a_long_random_secret
+SOLANA_RPC_URL=https://your-solana-rpc.example</code></pre>
+
+
+          <div class="code-row">
+
+            <h4>
+              Campaign requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="wallet-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="wallet-code">{
+  "key": "wallet",
+  "module": "wallet-signature",
+  "config": {}
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- X VERIFICATION -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Social
+            </div>
+
+            <h3>
+              X Verification
+            </h3>
+
+            <p class="muted">
+              Connect an X account and apply campaign eligibility
+              rules based on verified account data.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="x-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            OAuth
+          </span>
+
+          <span class="badge">
+            X Developer App
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="x-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Create an X Developer account.
+            </li>
+
+            <li>
+              Create an application in the X Developer Portal.
+            </li>
+
+            <li>
+              Enable OAuth for the application.
+            </li>
+
+            <li>
+              Add your SolGate callback URL.
+            </li>
+
+            <li>
+              Copy the X client ID and client secret.
+            </li>
+
+            <li>
+              Add them to the SolGate server environment.
+            </li>
+
+            <li>
+              Ensure your X API access level supports the data
+              required by your campaign.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="x-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="x-env">X_CLIENT_ID=your_x_client_id
+X_CLIENT_SECRET=your_x_client_secret
+X_REDIRECT_URI=https://api.example.com/oauth/x/callback</code></pre>
+
+
+          <div class="code-row">
+
+            <h4>
+              Campaign requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="x-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="x-code">{
+  "key": "x",
+  "module": "x-verify",
+  "config": {
+    "minAccountAgeDays": 30
+  }
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- TELEGRAM -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Social
+            </div>
+
+            <h3>
+              Telegram Verification
+            </h3>
+
+            <p class="muted">
+              Verify Telegram identity and use Telegram participation
+              as part of an eligibility campaign.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="telegram-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Telegram Bot
+          </span>
+
+          <span class="badge">
+            Login verification
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="telegram-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Open Telegram and contact BotFather.
+            </li>
+
+            <li>
+              Create a bot for your project.
+            </li>
+
+            <li>
+              Copy the bot token.
+            </li>
+
+            <li>
+              Configure the Telegram login flow for your website.
+            </li>
+
+            <li>
+              Add the bot to your community if membership
+              verification is required.
+            </li>
+
+            <li>
+              Store the bot token only on the server.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="telegram-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="telegram-env">TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_BOT_NAME=your_bot_name</code></pre>
+
+
+          <div class="code-row">
+
+            <h4>
+              Campaign requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="telegram-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="telegram-code">{
+  "key": "telegram",
+  "module": "telegram-verify",
+  "config": {}
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- TOKEN OWNERSHIP -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              On-chain
+            </div>
+
+            <h3>
+              SPL Token Ownership
+            </h3>
+
+            <p class="muted">
+              Require participants to hold a specific Solana token
+              or minimum token balance.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="token-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            SPL Token
+          </span>
+
+          <span class="badge">
+            Token-2022
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="token-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Obtain the token mint address.
+            </li>
+
+            <li>
+              Configure a Solana RPC provider.
+            </li>
+
+            <li>
+              Define the minimum balance required.
+            </li>
+
+            <li>
+              Add the token requirement to your campaign.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="token-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="token-env">SOLANA_RPC_URL=https://your-solana-rpc.example</code></pre>
+
+
+          <div class="code-row">
+
+            <h4>
+              Example requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="token-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="token-code">{
+  "key": "token-holder",
+  "module": "token-hold",
+  "config": {
+    "mint": "YOUR_TOKEN_MINT_ADDRESS",
+    "minAmount": "1000000"
+  }
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- NFT -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              On-chain
+            </div>
+
+            <h3>
+              NFT Ownership
+            </h3>
+
+            <p class="muted">
+              Verify whether a connected wallet owns a required NFT
+              or digital asset.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="nft-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            NFT gating
+          </span>
+
+          <span class="badge">
+            Solana assets
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="nft-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Identify the NFT collection or asset requirement.
+            </li>
+
+            <li>
+              Configure your Solana asset-data provider or RPC.
+            </li>
+
+            <li>
+              Add the NFT requirement to the campaign configuration.
+            </li>
+
+            <li>
+              Test with both eligible and non-eligible wallets.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Example requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="nft-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="nft-code">{
+  "key": "nft-holder",
+  "module": "nft-own",
+  "config": {
+    "collection": "YOUR_COLLECTION_ADDRESS"
+  }
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- DISCORD -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Social
+            </div>
+
+            <h3>
+              Discord Verification
+            </h3>
+
+            <p class="muted">
+              Connect Discord accounts and use server membership
+              or project-specific Discord eligibility rules.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="discord-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            OAuth
+          </span>
+
+          <span class="badge">
+            Discord Developer App
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="discord-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Open the Discord Developer Portal.
+            </li>
+
+            <li>
+              Create a Discord application.
+            </li>
+
+            <li>
+              Configure OAuth.
+            </li>
+
+            <li>
+              Add your SolGate callback URL.
+            </li>
+
+            <li>
+              Add the client ID and client secret to the server.
+            </li>
+
+            <li>
+              Add the bot to your Discord server if server or
+              role checks are required.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="discord-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="discord-env">DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+DISCORD_REDIRECT_URI=https://api.example.com/oauth/discord/callback</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- YOUTUBE -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Social
+            </div>
+
+            <h3>
+              YouTube Verification
+            </h3>
+
+            <p class="muted">
+              Add YouTube-related campaign requirements to your
+              eligibility flow.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="youtube-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Google API
+          </span>
+
+          <span class="badge">
+            Social task
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="youtube-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Create a Google Cloud project.
+            </li>
+
+            <li>
+              Enable the appropriate YouTube API.
+            </li>
+
+            <li>
+              Configure OAuth credentials if required.
+            </li>
+
+            <li>
+              Add your callback URL.
+            </li>
+
+            <li>
+              Add the required API credentials to your SolGate server.
+            </li>
+
+          </ol>
+
+
+          <div class="note">
+            Google and YouTube API permissions vary depending on the
+            action being verified. Confirm that your chosen verification
+            flow is supported by Google's current API policies.
+          </div>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- QUIZ -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Eligibility
+            </div>
+
+            <h3>
+              Quiz & Custom Questions
+            </h3>
+
+            <p class="muted">
+              Require users to answer campaign questions before
+              becoming eligible.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="quiz-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            No external API
+          </span>
+
+          <span class="badge">
+            Custom rules
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="quiz-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Create your campaign question.
+            </li>
+
+            <li>
+              Define the available answer choices.
+            </li>
+
+            <li>
+              Define the correct answer or pass score.
+            </li>
+
+            <li>
+              Add the quiz module to the campaign.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Example requirement
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="quiz-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="quiz-code">{
+  "key": "campaign-quiz",
+  "module": "quiz",
+  "config": {
+    "passScore": 1
+  }
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- CAPTCHA -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Security
+            </div>
+
+            <h3>
+              Captcha & Anti-Bot
+            </h3>
+
+            <p class="muted">
+              Add automated-abuse protection and rate limiting to
+              public allowlist campaigns.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="captcha-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Bot protection
+          </span>
+
+          <span class="badge">
+            Rate limiting
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="captcha-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Select a supported captcha provider.
+            </li>
+
+            <li>
+              Register your website domain.
+            </li>
+
+            <li>
+              Obtain the site key and secret key.
+            </li>
+
+            <li>
+              Store the secret key only on the backend.
+            </li>
+
+            <li>
+              Enable rate limiting on public verification endpoints.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Example environment
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="captcha-env"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="captcha-env">CAPTCHA_SITE_KEY=your_site_key
+CAPTCHA_SECRET_KEY=your_secret_key</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+
+      <!-- REFERRAL -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Growth
+            </div>
+
+            <h3>
+              Referral Rules
+            </h3>
+
+            <p class="muted">
+              Track referral activity and use validated referrals
+              as part of campaign allocation or eligibility rules.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="referral-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Referral tracking
+          </span>
+
+          <span class="badge">
+            Allocation logic
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="referral-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Enable referrals in your campaign.
+            </li>
+
+            <li>
+              Define referral qualification requirements.
+            </li>
+
+            <li>
+              Define any additional allocation or reward rules.
+            </li>
+
+            <li>
+              SolGate records eligible referral relationships.
+            </li>
+
+          </ol>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- CUSTOM MODULE -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Developer
+            </div>
+
+            <h3>
+              Custom Module
+            </h3>
+
+            <p class="muted">
+              Build project-specific verification logic while keeping
+              it inside the SolGate eligibility engine.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="custom-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            Extensible
+          </span>
+
+          <span class="badge">
+            Custom API
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="custom-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Create the custom verification module.
+            </li>
+
+            <li>
+              Define its public configuration schema.
+            </li>
+
+            <li>
+              Keep secrets and privileged configuration on the server.
+            </li>
+
+            <li>
+              Register the module with SolGate.
+            </li>
+
+            <li>
+              Add it to the campaign requirements.
+            </li>
+
+          </ol>
+
+
+          <div class="actions">
+
+            <a
+              class="btn"
+              href="https://github.com/Solgate-code/solgate/blob/main/docs/custom-modules.md"
+            >
+              Custom module documentation
+            </a>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- EXPORT -->
+
+      <article class="module-card">
+
+        <div class="module-header">
+
+          <div>
+
+            <div class="kicker">
+              Integration
+            </div>
+
+            <h3>
+              Export & Mint Integration
+            </h3>
+
+            <p class="muted">
+              Export eligible participants and connect SolGate
+              to your mint infrastructure or backend systems.
+            </p>
+
+          </div>
+
+          <button
+            class="tiny-btn"
+            data-toggle="export-info"
+          >
+            Info
+          </button>
+
+        </div>
+
+
+        <div class="module-meta">
+
+          <span class="badge">
+            CSV
+          </span>
+
+          <span class="badge">
+            JSON
+          </span>
+
+          <span class="badge">
+            Merkle
+          </span>
+
+          <span class="badge">
+            Webhooks
+          </span>
+
+        </div>
+
+
+        <div
+          class="module-panel"
+          id="export-info"
+        >
+
+          <h4>Necessary steps</h4>
+
+          <ol>
+
+            <li>
+              Complete your campaign eligibility checks.
+            </li>
+
+            <li>
+              Freeze or snapshot the final eligible set when appropriate.
+            </li>
+
+            <li>
+              Export wallet addresses as CSV or JSON.
+            </li>
+
+            <li>
+              Generate Merkle data if your mint system requires it.
+            </li>
+
+            <li>
+              Use signed webhooks or APIs to integrate downstream systems.
+            </li>
+
+          </ol>
+
+
+          <div class="code-row">
+
+            <h4>
+              Example webhook configuration
+            </h4>
+
+            <button
+              class="tiny-btn copy-btn"
+              data-copy-target="webhook-code"
+            >
+              Copy
+            </button>
+
+          </div>
+
+
+          <pre><code id="webhook-code">{
+  "url": "https://your-project.example/api/solgate",
+  "events": [
+    "entry.eligible"
+  ]
+}</code></pre>
+
+
+        </div>
+
+      </article>
+
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="section">
+
+  <div class="wrap">
+
+    <div class="note">
+
+      <strong>Important:</strong>
+
+      External APIs such as X, Telegram, Discord and Google may
+      change their access tiers, OAuth requirements or permitted
+      verification actions. Always confirm the current provider
+      documentation before launching a production campaign.
+
+    </div>
+
+  </div>
+
+</section>
+
+
+</main>
+
+
+<footer>
+
+  <div class="wrap">
+
+    <a href="index.html">SolGate</a>
+    · Open-source eligibility infrastructure for Solana.
+
+  </div>
+
+</footer>
+
+
+</body>
+</html>
