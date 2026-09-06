@@ -1,11 +1,12 @@
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { buildSignInMessage, buildMerkleTree, getMerkleProof, toCSV, toJSON, toRows, toWalletList } from "@solana-allowlist/core";
+import { buildSignInMessage, buildMerkleTree, getMerkleProof, toCSV, toJSON, toRows, toWalletList } from "@solgate/core";
 import { normalizeConfig, type ServerConfig } from "./config.js";
 import { AllowlistError, AllowlistService } from "./service.js";
 import { randomId, safeEqual, sha256Hex, signSession, verifySession, verifyWalletSignature } from "./crypto.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
+import { assertSafeWebhookUrl } from "./webhooks.js";
 
 export type AppEnv = {
   Variables: { session: { wallet: string; campaignId: string }; apiKeyScopes: string[] };
@@ -13,12 +14,31 @@ export type AppEnv = {
 
 const pubkey = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
 
-export function createAllowlistApp(config: ServerConfig, opts: { waitUntil?: (p: Promise<unknown>) => void } = {}) {
+export function createAllowlistApp(
+  config: ServerConfig,
+  opts: { waitUntil?: (p: Promise<unknown>) => void; getClientIp?: (c: Context) => string | undefined } = {},
+) {
   const cfg = normalizeConfig(config);
   const svc = new AllowlistService(cfg, opts.waitUntil);
   const app = new Hono<AppEnv>();
-  const ipOf = (c: Context) =>
-    c.req.header("cf-connecting-ip") ?? c.req.header("x-real-ip") ?? c.req.header("x-forwarded-for")?.split(",")[0].trim();
+  const socketIp = (c: Context) => {
+    try {
+      return opts.getClientIp?.(c) ?? cfg.getClientIp?.(c.req.raw);
+    } catch {
+      return undefined;
+    }
+  };
+  /** Client IP according to the configured trust model — never a header the client could forge. */
+  const ipOf = (c: Context): string | undefined => {
+    switch (cfg.trustProxy) {
+      case "cloudflare":
+        return c.req.header("cf-connecting-ip") ?? socketIp(c);
+      case "x-forwarded-for":
+        return c.req.header("x-forwarded-for")?.split(",")[0].trim() ?? socketIp(c);
+      default:
+        return socketIp(c);
+    }
+  };
 
   app.use("*", cors({ origin: cfg.corsOrigins === "*" ? "*" : cfg.corsOrigins, allowHeaders: ["content-type", "authorization", "x-api-key"] }));
 
@@ -117,13 +137,29 @@ export function createAllowlistApp(config: ServerConfig, opts: { waitUntil?: (p:
   registerOAuthRoutes(app, svc, cfg, requireSession);
 
   /* ======================= INTEGRATION (mint sites / scripts) ======================= */
-  const lookupGuard = cfg.protectEligibilityLookup ? requireApiKey("read") : async (_c: Context<AppEnv>, n: () => Promise<void>) => n();
+  const passthrough = async (_c: Context<AppEnv>, n: () => Promise<void>) => n();
+  const lookupGuard = cfg.eligibilityLookup === "protected" ? requireApiKey("read") : passthrough;
+  /**
+   * Mint-time lookup. Served from the latest snapshot when one exists (immutable
+   * root + precomputed proofs), otherwise computed live. `?snapshot=<id>` pins one.
+   */
   app.get("/campaigns/:id/eligibility/:wallet", lookupGuard, async (c) => {
     const campaign = await svc.getCampaign((c.req.param("id") as string));
     const wallet = pubkey.parse(c.req.param("wallet"));
+    const hasKey = !!c.req.header("x-api-key") || !!c.req.header("authorization");
+    const detailed = cfg.eligibilityLookup === "full" || cfg.eligibilityLookup === "protected" || hasKey;
+    const snap = await cfg.storage.getSnapshot(campaign.id, c.req.query("snapshot") || undefined);
+    if (snap) {
+      const e = snap.entries[wallet];
+      const out: Record<string, unknown> = { wallet, eligible: !!e, allocation: e?.allocation ?? 0, snapshot: snap.id };
+      if (detailed) out.rank = e?.rank;
+      if (e?.proof && snap.merkle) out.merkle = { root: snap.merkle.root, proof: e.proof };
+      return c.json(out);
+    }
     const entries = await svc.finalEntries(campaign);
     const entry = entries.find((e) => e.wallet === wallet);
-    const out: Record<string, unknown> = { wallet, eligible: entry?.eligible ?? false, allocation: entry?.allocation ?? 0, points: entry?.points ?? 0, rank: entry?.rank };
+    const out: Record<string, unknown> = { wallet, eligible: entry?.eligible ?? false, allocation: entry?.allocation ?? 0, snapshot: null };
+    if (detailed) Object.assign(out, { points: entry?.points ?? 0, rank: entry?.rank });
     if (campaign.merkle.enabled && entry?.eligible) {
       const tree = buildMerkleTree(entries.filter((e) => e.eligible).map((e) => e.wallet), campaign.merkle.scheme);
       out.merkle = { root: tree.root, proof: getMerkleProof(tree, wallet) };
@@ -175,6 +211,18 @@ export function createAllowlistApp(config: ServerConfig, opts: { waitUntil?: (p:
     return c.json(await svc.overrideRequirement(campaign, c.req.param("wallet"), (c.req.param("key") as string), passed, note));
   });
 
+  admin.post("/campaigns/:id/snapshot", async (c) => {
+    const campaign = await svc.getCampaign((c.req.param("id") as string));
+    const { entries: _e, ...summary } = await svc.createSnapshot(campaign);
+    return c.json(summary, 201);
+  });
+  admin.get("/campaigns/:id/snapshots", async (c) => c.json(await cfg.storage.listSnapshots(c.req.param("id") as string)));
+  admin.get("/campaigns/:id/snapshots/:sid", async (c) => {
+    const snap = await cfg.storage.getSnapshot(c.req.param("id") as string, c.req.param("sid") as string);
+    if (!snap) throw new AllowlistError(404, "Snapshot not found");
+    return c.json(snap);
+  });
+
   admin.post("/campaigns/:id/recheck", async (c) => {
     const campaign = await svc.getCampaign((c.req.param("id") as string));
     const { wallets } = z.object({ wallets: z.array(pubkey).optional() }).parse(await c.req.json().catch(() => ({})));
@@ -202,6 +250,11 @@ export function createAllowlistApp(config: ServerConfig, opts: { waitUntil?: (p:
   admin.get("/webhooks", async (c) => c.json((await cfg.storage.listWebhooks()).map(({ secret: _s, ...w }) => w)));
   admin.post("/webhooks", async (c) => {
     const body = z.object({ url: z.string().url(), events: z.array(z.string()).default(["*"]), campaignId: z.string().optional() }).parse(await c.req.json());
+    try {
+      assertSafeWebhookUrl(body.url, { allowInsecure: cfg.allowInsecureWebhooks });
+    } catch (e) {
+      throw new AllowlistError(400, (e as Error).message, "unsafe_webhook_url");
+    }
     const w = { id: randomId(8), secret: randomId(24), active: true, createdAt: Date.now(), ...body };
     await cfg.storage.putWebhook(w);
     return c.json(w, 201); // secret returned once

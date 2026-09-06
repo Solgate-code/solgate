@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from "react";
-import type { Entry } from "@solana-allowlist/core";
+import type { Entry } from "@solgate/core";
 import { useAllowlist } from "./hooks.js";
 import { connectStandardWallet, listSolanaWallets, onWalletsChange, type WalletLike } from "./wallet.js";
 import { pickRenderer, type ReqProps } from "./requirements/index.js";

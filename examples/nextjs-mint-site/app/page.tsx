@@ -1,13 +1,13 @@
 "use client";
 /**
  * Minimal Next.js page embedding the widget with wallet-adapter as the wallet source.
- * pnpm add @solana-allowlist/react @solana/wallet-adapter-react @solana/wallet-adapter-react-ui
+ * pnpm add @solgate/react @solana/wallet-adapter-react @solana/wallet-adapter-react-ui
  */
 import { useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { AllowlistWidget, type WalletLike } from "@solana-allowlist/react";
-import "@solana-allowlist/react/styles.css";
+import { AllowlistWidget, type WalletLike } from "@solgate/react";
+import "@solgate/react/styles.css";
 
 export default function Page() {
   const { publicKey, signMessage, disconnect } = useWallet();

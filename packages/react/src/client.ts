@@ -1,4 +1,4 @@
-import type { Entry, RequirementResult } from "@solana-allowlist/core";
+import type { Entry, RequirementResult } from "@solgate/core";
 
 export interface PublicRequirement {
   key: string;

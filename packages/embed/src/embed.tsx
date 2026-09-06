@@ -7,7 +7,7 @@
  * or programmatically: SolanaAllowlist.mount(el, { baseUrl, campaignId })
  */
 import { createRoot } from "react-dom/client";
-import { AllowlistWidget, type AllowlistWidgetProps } from "@solana-allowlist/react";
+import { AllowlistWidget, type AllowlistWidgetProps } from "@solgate/react";
 
 export function mount(el: HTMLElement, props: AllowlistWidgetProps) {
   const root = createRoot(el);

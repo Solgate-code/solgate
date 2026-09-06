@@ -1,5 +1,5 @@
-import type { Campaign, Entry } from "@solana-allowlist/core";
-import type { ApiKey, SocialLink, Storage, Webhook, WebhookDelivery } from "./types.js";
+import type { Campaign, Entry } from "@solgate/core";
+import type { ApiKey, Snapshot, SocialLink, Storage, Webhook, WebhookDelivery } from "./types.js";
 
 /** In-memory adapter: tests, demos, and stateless edge deployments with a warm cache. */
 export class MemoryStorage implements Storage {
@@ -10,6 +10,7 @@ export class MemoryStorage implements Storage {
   webhooks = new Map<string, Webhook>();
   deliveries: WebhookDelivery[] = [];
   apiKeys = new Map<string, ApiKey>();
+  snapshots = new Map<string, Snapshot>();
 
   async getCampaign(id: string) {
     return this.campaigns.get(id) ?? null;
@@ -71,8 +72,23 @@ export class MemoryStorage implements Storage {
   async getSocialLink(campaignId: string, provider: string, providerUserId: string) {
     return this.social.get(`${campaignId}:${provider}:${providerUserId}`) ?? null;
   }
-  async putSocialLink(link: SocialLink) {
-    this.social.set(`${link.campaignId}:${link.provider}:${link.providerUserId}`, link);
+  // JS is single-threaded, so check-then-set within one synchronous block is atomic here.
+  async claimSocialLink(link: SocialLink): Promise<{ ok: true } | { ok: false; owner: string }> {
+    const k = `${link.campaignId}:${link.provider}:${link.providerUserId}`;
+    const existing = this.social.get(k);
+    if (existing && existing.wallet !== link.wallet) return { ok: false, owner: existing.wallet };
+    if (!existing) this.social.set(k, link);
+    return { ok: true };
+  }
+  async putSnapshot(s: Snapshot) {
+    this.snapshots.set(s.id, s);
+  }
+  async getSnapshot(campaignId: string, id?: string) {
+    const all = [...this.snapshots.values()].filter((s) => s.campaignId === campaignId).sort((a, b) => b.createdAt - a.createdAt);
+    return (id ? all.find((s) => s.id === id) : all[0]) ?? null;
+  }
+  async listSnapshots(campaignId: string) {
+    return [...this.snapshots.values()].filter((s) => s.campaignId === campaignId).sort((a, b) => b.createdAt - a.createdAt).map(({ entries: _e, ...s }) => s);
   }
   async listSocialLinksForWallet(campaignId: string, wallet: string) {
     return [...this.social.values()].filter((l) => l.campaignId === campaignId && l.wallet === wallet);

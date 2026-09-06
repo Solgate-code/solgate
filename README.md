@@ -1,11 +1,13 @@
-# SolGate
-**Open-source eligibility and access infrastructure for Solana.**
-SolGate is a modular, self-hosted framework for building allowlists, wallet verification, token gating, NFT eligibility, airdrop eligibility, community campaigns, and access-control flows on Solana.
-Embed it in **your own website**, run it on **your own server**, and retain control of **your own data and infrastructure**.
+# Solana Allowlist
+
+An open-source, modular allowlist and eligibility framework for Solana projects.
+Embed it in **your own website**; run it on **your own server**; export **your own data**.
 No launchpad. No hosted platform. No lock-in.
 
+> **Status: alpha.** The architecture is stable and the test suite covers the eligibility engine, wallet auth, social-identity atomicity, referral accounting, FCFS ranking, OAuth redirect validation, snapshots and SSRF guards — but it has not had a third-party audit and has not run a production mint yet. See [docs/security.md](docs/security.md) and [CHANGELOG.md](CHANGELOG.md) before using it for real money.
+
 ```
-Solgate SDK
+Solana Allowlist SDK
         │
         ├── Wallet Signature          (SIWS-style nonce + ed25519)
         ├── Token Holding Check       (SPL + Token-2022 via RPC)
@@ -46,16 +48,16 @@ The goal of this project is to make the self-hosted path *easier* than the hoste
 
 | Package | What it is |
 |---|---|
-| `@solana-allowlist/core` | Types, module registry, eligibility engine, tiered allocation, Merkle tree (Candy Guard compatible), CSV/JSON export. Zero I/O; runs anywhere. |
-| `@solana-allowlist/server` | Hono API: wallet auth, all built-in verifiers, OAuth flows, webhooks, admin endpoints. Storage adapters (memory, SQLite; Postgres/D1 are a copy-paste away). |
-| `@solana-allowlist/react` | `<AllowlistWidget/>` plus headless `useAllowlist()` hook and `AllowlistClient`. Works with Wallet Standard out of the box or with your existing wallet-adapter. |
-| `@solana-allowlist/embed` | One `<script>` tag for Webflow / Framer / WordPress / static HTML. |
-| `@solana-allowlist/admin` | Self-hosted dashboard: campaigns, entries, approvals, snapshot re-checks, exports, webhooks, API keys. |
+| `@solgate/core` | Types, module registry, eligibility engine, tiered allocation, Merkle tree (Candy Guard compatible), CSV/JSON export. Zero I/O; runs anywhere. |
+| `@solgate/server` | Hono API: wallet auth, all built-in verifiers, OAuth flows, webhooks, admin endpoints. Storage adapters (memory, SQLite; Postgres/D1 are a copy-paste away). |
+| `@solgate/react` | `<AllowlistWidget/>` plus headless `useAllowlist()` hook and `AllowlistClient`. Works with Wallet Standard out of the box or with your existing wallet-adapter. |
+| `@solgate/embed` | One `<script>` tag for Webflow / Framer / WordPress / static HTML. |
+| `@solgate/admin` | Self-hosted dashboard: campaigns, entries, approvals, snapshot re-checks, exports, webhooks, API keys. |
 
 ## Quick start
 
 ```bash
-git clone https://github.com/Solgate-code/solana-allowlist.git && cd solana-allowlist
+git clone https://github.com/Solgate-code/solgate.git && cd solgate
 pnpm install && pnpm build
 
 # 1. API
@@ -70,8 +72,8 @@ cd ../admin && pnpm dev         # http://localhost:5173 → connect with your AD
 ```
 
 ```tsx
-import { AllowlistWidget } from "@solana-allowlist/react";
-import "@solana-allowlist/react/styles.css";
+import { AllowlistWidget } from "@solgate/react";
+import "@solgate/react/styles.css";
 
 <AllowlistWidget baseUrl="https://api.myproject.xyz" campaignId="genesis-mint" theme="dark" />
 ```
@@ -80,7 +82,7 @@ or, without React:
 
 ```html
 <div data-allowlist data-base-url="https://api.myproject.xyz" data-campaign="genesis-mint"></div>
-<script src="https://unpkg.com/@solana-allowlist/embed/dist/embed.global.js" defer></script>
+<script src="https://unpkg.com/@solgate/embed/dist/embed.global.js" defer></script>
 ```
 
 ## A campaign is JSON
@@ -112,12 +114,13 @@ or, without React:
 }
 ```
 
-Eligibility = every `required` requirement passed **and** `points ≥ minPoints`. Allocation is flat, tiered by points, or per-requirement, then capped per wallet and by total supply (first-come by eligibility time). Caps are applied at export time so the ranked list is always consistent.
+Eligibility = every `required` requirement passed **and** `points ≥ minPoints` (points include referral bonuses). Allocation is flat, tiered by points, or per-requirement, then capped per wallet and by total supply. First-come ordering uses the moment a wallet *became eligible* (`eligibleAt`), not when it registered; ties break on wallet address so the list is deterministic.
 
 ## Getting the list out
 
 - **Admin → Export**: CSV, JSON (with evidence), plain wallet list, Merkle root + proofs.
-- **Mint-time API**: `GET /campaigns/:id/eligibility/:wallet` → `{ eligible, allocation, merkle: { root, proof } }`.
+- **Snapshot**: `POST /admin/campaigns/:id/snapshot` freezes the eligible set, allocations and Merkle root before mint.
+- **Mint-time API**: `GET /campaigns/:id/eligibility/:wallet` → `{ eligible, allocation, merkle: { root, proof } }`, served from the latest snapshot.
 - **Webhooks**: HMAC-signed events (`entry.eligible`, …) to your backend, Discord bot, CRM.
 - **Candy Machine**: see `examples/candy-machine` — the tree hashes exactly like `mpl-candy-machine`'s `getMerkleRoot`.
 

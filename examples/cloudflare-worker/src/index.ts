@@ -2,8 +2,8 @@
  * Deploy the API to Cloudflare Workers. Storage here is a tiny KV-backed adapter;
  * for production use D1 (SQL) — the Storage interface is 20 methods, see docs/storage.md.
  */
-import { createAllowlistApp, type Storage } from "@solana-allowlist/server";
-import { MemoryStorage } from "@solana-allowlist/server";
+import { createAllowlistApp, type Storage } from "@solgate/server";
+import { MemoryStorage } from "@solgate/server";
 
 export default {
   async fetch(req: Request, env: Record<string, string>, ctx: ExecutionContext) {

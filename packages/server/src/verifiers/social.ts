@@ -11,9 +11,9 @@ import {
   TelegramVerificationModule,
   XVerificationModule,
   YouTubeVerificationModule,
-} from "@solana-allowlist/core";
+} from "@solgate/core";
 import { fail, pass, type Verifier, type VerifyContext } from "./types.js";
-import { hmacHex, sha256Hex } from "../crypto.js";
+import { hmacHex, safeEqual, sha256Hex } from "../crypto.js";
 
 export interface SocialProfile {
   provider: "x" | "discord" | "google" | "telegram";
@@ -26,20 +26,18 @@ export interface SocialProfile {
 /** Enforce that a provider account is linked to at most one wallet per campaign. */
 async function claimIdentity(ctx: VerifyContext<unknown, SocialProfile>): Promise<string | null> {
   const { storage, campaign, wallet, input } = ctx;
-  const existing = await storage.getSocialLink(campaign.id, input.provider, input.id);
-  if (existing && existing.wallet !== wallet) {
-    return `This ${input.provider} account is already linked to another wallet.`;
-  }
-  await storage.putSocialLink({
+  // Atomic insert-if-absent: the storage's unique constraint decides, so two
+  // wallets racing for the same identity cannot both succeed.
+  const res = await storage.claimSocialLink({
     campaignId: campaign.id,
     provider: input.provider,
     providerUserId: input.id,
     wallet,
     handle: input.handle,
     meta: input.meta,
-    createdAt: existing?.createdAt ?? Date.now(),
+    createdAt: Date.now(),
   });
-  return null;
+  return res.ok ? null : `This ${input.provider} account is already linked to another wallet.`;
 }
 
 /* ---------------- X ---------------- */
@@ -130,7 +128,7 @@ export interface TelegramLoginData {
   hash: string;
 }
 /** Validate Telegram Login Widget payload per https://core.telegram.org/widgets/login#checking-authorization */
-export function verifyTelegramLogin(botToken: string, data: TelegramLoginData, maxAgeSeconds = 600): boolean {
+export function verifyTelegramLogin(botToken: string, data: TelegramLoginData, maxAgeSeconds = 600, clockSkewSeconds = 60): boolean {
   const { hash, ...rest } = data;
   const dataCheck = Object.keys(rest)
     .sort()
@@ -140,8 +138,11 @@ export function verifyTelegramLogin(botToken: string, data: TelegramLoginData, m
   const secretHex = sha256Hex(botToken);
   const secretBytes = Uint8Array.from(secretHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
   const computed = hmacHexBytes(secretBytes, dataCheck);
-  if (computed !== hash) return false;
-  return Date.now() / 1000 - data.auth_date < maxAgeSeconds;
+  if (typeof hash !== "string" || !safeEqual(computed, hash)) return false;
+  const now = Date.now() / 1000;
+  const age = now - Number(data.auth_date);
+  // reject both stale logins and ones claiming to be from the future
+  return Number.isFinite(age) && age >= -clockSkewSeconds && age <= maxAgeSeconds;
 }
 import { hmac } from "@noble/hashes/hmac";
 import { sha256 } from "@noble/hashes/sha256";

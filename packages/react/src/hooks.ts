@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Entry } from "@solana-allowlist/core";
+import type { Entry } from "@solgate/core";
 import { AllowlistClient, type PublicCampaign } from "./client.js";
 import { encodeSignature, type WalletLike } from "./wallet.js";
 

@@ -1,4 +1,4 @@
-import type { Campaign, Entry, Requirement, RequirementResult } from "@solana-allowlist/core";
+import type { Campaign, Entry, Requirement, RequirementResult } from "@solgate/core";
 import type { Storage } from "../storage/types.js";
 import type { NormalizedConfig } from "../config.js";
 
@@ -38,3 +38,12 @@ export const fail = (key: string, module: string, reason: string, evidence?: Rec
   evidence,
   checkedAt: Date.now(),
 });
+
+/**
+ * Throw this when an upstream dependency (RPC, provider API) failed. The
+ * service leaves the entry untouched and returns HTTP 503 to the client, so
+ * the user can retry — instead of persisting a false "failed" result.
+ */
+export class VerificationUnavailable extends Error {
+  readonly code = "verification_unavailable";
+}

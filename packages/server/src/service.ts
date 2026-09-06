@@ -7,9 +7,11 @@ import {
   type Campaign,
   type Entry,
   type RequirementResult,
-} from "@solana-allowlist/core";
+} from "@solgate/core";
 import type { NormalizedConfig } from "./config.js";
-import { builtinVerifiers, type Verifier } from "./verifiers/index.js";
+import { VerificationUnavailable, builtinVerifiers, type Verifier } from "./verifiers/index.js";
+import { buildMerkleTree, getMerkleProof } from "@solgate/core";
+import type { Snapshot } from "./storage/types.js";
 import { EventBus } from "./webhooks.js";
 import { randomId } from "./crypto.js";
 
@@ -46,16 +48,22 @@ export class AllowlistService {
     await this.events.emit("campaign.updated", c.id, { name: c.name });
     return c;
   }
-  /** Campaign as seen by the browser: quiz answers etc. stripped. */
+  /**
+   * Campaign as seen by the browser. Requirement config is PRIVATE BY DEFAULT:
+   * a module must opt in via `publicConfig` (on its definition, or on the
+   * verifier) to expose anything. Custom modules that forget get `{}`, not
+   * their secrets.
+   */
   publicCampaign(c: Campaign) {
     return {
       ...c,
       requirements: c.requirements.map((r) => {
         const v = this.verifiers.get(r.module);
         const def = this.registry.get(r.module);
+        const project = def?.publicConfig ?? v?.publicConfig;
         return {
           ...r,
-          config: v?.publicConfig ? v.publicConfig(r.config) : r.config,
+          config: project ? project(r.config) ?? {} : {},
           category: def?.category ?? "custom",
           label: r.title ?? def?.label ?? r.module,
         };
@@ -109,17 +117,13 @@ export class AllowlistService {
 
     const entry = await this.getOrCreateEntry(c, wallet);
     const wasEligible = entry.eligible;
-    const result = await verifier.verify({
-      campaign: c,
-      requirement,
-      config: requirement.config,
-      wallet,
-      entry,
-      input,
-      storage: this.cfg.storage,
-      cfg: this.cfg,
-      ip,
-    });
+    let result: RequirementResult;
+    try {
+      result = await verifier.verify({ campaign: c, requirement, config: requirement.config, wallet, entry, input, storage: this.cfg.storage, cfg: this.cfg, ip });
+    } catch (e) {
+      if (e instanceof VerificationUnavailable) throw new AllowlistError(503, e.message, e.code);
+      throw e;
+    }
     entry.results[key] = result;
     const updated = evaluateEntry(c, entry);
     await this.cfg.storage.putEntry(updated);
@@ -140,17 +144,48 @@ export class AllowlistService {
       ? (await Promise.all(onlyWallets.map((w) => this.cfg.storage.getEntry(c.id, w)))).filter(Boolean) as Entry[]
       : await this.cfg.storage.listEntries(c.id);
     let changed = 0;
+    let unavailable = 0;
     for (const entry of entries) {
       const before = entry.eligible;
       for (const r of recheckable) {
         const v = this.verifiers.get(r.module)!;
-        entry.results[r.key] = await v.verify({ campaign: c, requirement: r, config: r.config, wallet: entry.wallet, entry, input: {}, storage: this.cfg.storage, cfg: this.cfg });
+        try {
+          entry.results[r.key] = await v.verify({ campaign: c, requirement: r, config: r.config, wallet: entry.wallet, entry, input: {}, storage: this.cfg.storage, cfg: this.cfg });
+        } catch (e) {
+          if (!(e instanceof VerificationUnavailable)) throw e;
+          unavailable++; // keep the previous result rather than failing the wallet on an RPC hiccup
+        }
       }
       const updated = evaluateEntry(c, entry);
       if (updated.eligible !== before) changed++;
       await this.cfg.storage.putEntry(updated);
     }
-    return { checked: entries.length, changed };
+    return { checked: entries.length, changed, unavailable };
+  }
+
+  /**
+   * Freeze the current eligible set (with caps applied) into an immutable
+   * snapshot: root, per-wallet allocation/rank/proof. Serve mint-time lookups
+   * from this so the root can't drift while people are minting.
+   */
+  async createSnapshot(c: Campaign): Promise<Snapshot> {
+    const eligible = (await this.finalEntries(c)).filter((e) => e.eligible);
+    const snap: Snapshot = {
+      id: randomId(6),
+      campaignId: c.id,
+      createdAt: Date.now(),
+      count: eligible.length,
+      totalAllocation: eligible.reduce((s, e) => s + e.allocation, 0),
+      entries: Object.fromEntries(eligible.map((e) => [e.wallet, { allocation: e.allocation, rank: e.rank! }])),
+    };
+    if (c.merkle.enabled && eligible.length > 0) {
+      const tree = buildMerkleTree(eligible.map((e) => e.wallet), c.merkle.scheme);
+      snap.merkle = { scheme: tree.scheme, root: tree.root };
+      for (const e of eligible) snap.entries[e.wallet].proof = getMerkleProof(tree, e.wallet)!;
+    }
+    await this.cfg.storage.putSnapshot(snap);
+    await this.events.emit("campaign.snapshot", c.id, { snapshotId: snap.id, count: snap.count, root: snap.merkle?.root });
+    return snap;
   }
 
   /** Entries with campaign-wide caps applied (ranked FCFS). */

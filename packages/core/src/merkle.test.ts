@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildMerkleTree, getMerkleProof, verifyMerkleProof } from "./merkle.js";
-import { computeAllocation, computeEligibility, applyCaps } from "./engine.js";
+import { computeAllocation, computeEligibility, applyCaps, evaluateEntry } from "./engine.js";
 import { toCSV, toRows } from "./export.js";
 import type { Campaign, Entry } from "./types.js";
 
@@ -81,14 +81,40 @@ describe("engine", () => {
   });
   it("applies total supply caps FCFS", () => {
     const entries = [
-      { ...mk(wallets[0], ["sig", "tok", "x"], 1), eligible: true, points: 5, allocation: 3 },
-      { ...mk(wallets[1], ["sig", "tok"], 2), eligible: true, points: 2, allocation: 1 },
-      { ...mk(wallets[2], ["sig", "tok"], 3), eligible: true, points: 2, allocation: 1 },
+      { ...mk(wallets[0], ["sig", "tok", "x"], 1), eligible: true, points: 5, allocation: 3, eligibleAt: 1 },
+      { ...mk(wallets[1], ["sig", "tok"], 2), eligible: true, points: 2, allocation: 1, eligibleAt: 2 },
+      { ...mk(wallets[2], ["sig", "tok"], 3), eligible: true, points: 2, allocation: 1, eligibleAt: 3 },
     ];
     const capped = applyCaps(campaign, entries);
     expect(capped.map((e) => e.allocation)).toEqual([3, 1, 0]);
     expect(capped[2].eligible).toBe(false);
     const csv = toCSV(toRows(campaign, capped));
     expect(csv.split("\n")).toHaveLength(3); // header + 2 eligible
+  });
+});
+
+describe("audit regressions", () => {
+  it("bonus points survive re-evaluation and count toward eligibility", () => {
+    const e = { ...mk(wallets[0], ["sig", "tok"], 1), bonusPoints: 3 };
+    const first = evaluateEntry(campaign, e, 10);
+    expect(first.points).toBe(5);
+    expect(first.allocation).toBe(3); // tier 2
+    const again = evaluateEntry(campaign, { ...first, results: { ...first.results } }, 20);
+    expect(again.points).toBe(5);
+  });
+  it("ranks by eligibleAt, not createdAt, and eligibleAt is sticky", () => {
+    const alice = evaluateEntry(campaign, mk(wallets[0], ["sig"], 100), 100); // registered first, not eligible
+    expect(alice.eligibleAt).toBeUndefined();
+    const bob = evaluateEntry(campaign, mk(wallets[1], ["sig", "tok"], 200), 200); // eligible at 200
+    const aliceLater = evaluateEntry(campaign, { ...alice, results: mk(wallets[0], ["sig", "tok"], 100).results }, 900);
+    expect(aliceLater.eligibleAt).toBe(900);
+    const capped = applyCaps({ ...campaign, maxEntries: 1 }, [aliceLater, bob]);
+    const byWallet = Object.fromEntries(capped.map((e) => [e.wallet, e]));
+    expect(byWallet[wallets[1]].rank).toBe(1);
+    expect(byWallet[wallets[0]].eligible).toBe(false);
+    // losing eligibility later does not erase the original eligibleAt
+    const lost = evaluateEntry(campaign, { ...bob, results: mk(wallets[1], ["sig"], 200).results }, 1000);
+    expect(lost.eligible).toBe(false);
+    expect(lost.eligibleAt).toBe(200);
   });
 });

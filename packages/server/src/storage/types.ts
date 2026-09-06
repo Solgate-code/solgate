@@ -1,4 +1,4 @@
-import type { Campaign, Entry } from "@solana-allowlist/core";
+import type { Campaign, Entry } from "@solgate/core";
 
 export interface SocialLink {
   campaignId: string;
@@ -28,6 +28,18 @@ export interface WebhookDelivery {
   attempts: number;
   lastError?: string;
   createdAt: number;
+}
+
+/** Immutable eligibility snapshot taken before a mint. */
+export interface Snapshot {
+  id: string;
+  campaignId: string;
+  createdAt: number;
+  count: number;
+  totalAllocation: number;
+  merkle?: { scheme: string; root: string };
+  /** wallet → { allocation, rank, proof } */
+  entries: Record<string, { allocation: number; rank: number; proof?: string[] }>;
 }
 
 export interface ApiKey {
@@ -60,13 +72,23 @@ export interface Storage {
   setTemp(key: string, value: string, ttlSeconds: number): Promise<void>;
   getTemp(key: string): Promise<string | null>;
   deleteTemp(key: string): Promise<void>;
-  /** Atomic increment with TTL, for rate limiting. Returns new value. */
+  /** ATOMIC increment with TTL (rate limits, attempt counters, referral caps). Must be safe under concurrency. */
   incrTemp(key: string, ttlSeconds: number): Promise<number>;
 
   // social identity uniqueness
   getSocialLink(campaignId: string, provider: string, providerUserId: string): Promise<SocialLink | null>;
-  putSocialLink(link: SocialLink): Promise<void>;
+  /**
+   * ATOMIC "insert if absent". Returns `{ ok: true }` when this wallet now owns the identity
+   * (fresh insert or already owned by the same wallet), otherwise `{ ok: false, owner }`.
+   * The database's unique constraint — not application sequencing — enforces one-identity-one-wallet.
+   */
+  claimSocialLink(link: SocialLink): Promise<{ ok: true } | { ok: false; owner: string }>;
   listSocialLinksForWallet(campaignId: string, wallet: string): Promise<SocialLink[]>;
+
+  // snapshots
+  putSnapshot(s: Snapshot): Promise<void>;
+  getSnapshot(campaignId: string, id?: string): Promise<Snapshot | null>; // latest when id omitted
+  listSnapshots(campaignId: string): Promise<Omit<Snapshot, "entries">[]>;
 
   // webhooks
   listWebhooks(): Promise<Webhook[]>;

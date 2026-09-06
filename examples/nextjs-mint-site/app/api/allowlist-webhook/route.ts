@@ -1,5 +1,5 @@
 /** Receives signed events from the allowlist server (e.g. to sync to your CRM / Discord bot). */
-import { verifyWebhookSignature } from "@solana-allowlist/server";
+import { verifyWebhookSignature } from "@solgate/server";
 
 export async function POST(req: Request) {
   const body = await req.text();

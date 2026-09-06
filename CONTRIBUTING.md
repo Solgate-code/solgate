@@ -5,8 +5,8 @@ Thanks for helping make self-hosted allowlists the default on Solana.
 ## Setup
 
 ```bash
-git clone https://github.com/Solgate-code/solana-allowlist.git
-cd solana-allowlist
+git clone https://github.com/Solgate-code/solgate.git
+cd solgate
 pnpm install
 pnpm build && pnpm test
 ```

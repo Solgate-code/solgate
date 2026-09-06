@@ -64,6 +64,26 @@ const moduleForProvider: Record<Provider, string> = { x: "x-verify", discord: "d
  *   GET  /oauth/:provider/callback                                                (provider redirects here)
  * On callback we verify the requirement and redirect to `return` with ?allowlist=<key>:<ok|error>&msg=…
  */
+/**
+ * Only allow redirecting back to: a relative path, the API's own origin, a CORS
+ * origin, or an explicitly allowed origin. Anything else is an open redirect.
+ */
+export function resolveReturnUrl(raw: string | undefined, cfg: NormalizedConfig): URL | null {
+  const base = new URL(cfg.baseUrl);
+  let u: URL;
+  try {
+    u = new URL(raw ?? "/", base);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  const allowed = new Set<string>([base.origin, ...(cfg.allowedReturnOrigins ?? []), ...(Array.isArray(cfg.corsOrigins) ? cfg.corsOrigins : [])]);
+  if (allowed.has(u.origin)) return u;
+  // corsOrigins "*" means "any site may embed the widget", so any https origin may be a return target.
+  if (cfg.corsOrigins === "*" && u.protocol === "https:") return u;
+  return null;
+}
+
 export function registerOAuthRoutes(
   app: Hono<AppEnv>,
   svc: AllowlistService,
@@ -79,7 +99,9 @@ export function registerOAuthRoutes(
     const key = c.req.query("key");
     const req = campaign.requirements.find((r) => r.key === key && r.module === moduleForProvider[provider]);
     if (!req) return c.json({ error: "bad_request", message: "Requirement key does not match provider" }, 400);
-    const returnTo = c.req.query("return") ?? "/";
+    const returnUrl = resolveReturnUrl(c.req.query("return"), cfg);
+    if (!returnUrl) return c.json({ error: "bad_request", message: "return URL is not an allowed origin" }, 400);
+    const returnTo = returnUrl.toString();
     const state = randomId(16);
     const verifier = def.pkce ? pkceVerifier() : "";
     await cfg.storage.setTemp(`oauth:${state}`, JSON.stringify({ campaignId: campaign.id, wallet: c.get("session").wallet, key, returnTo, verifier }), 600);
@@ -108,7 +130,7 @@ export function registerOAuthRoutes(
     await cfg.storage.deleteTemp(`oauth:${state}`);
     const { campaignId, wallet, key, returnTo, verifier } = JSON.parse(raw) as { campaignId: string; wallet: string; key: string; returnTo: string; verifier: string };
     const back = (status: "ok" | "error", msg?: string) => {
-      const u = new URL(returnTo, cfg.baseUrl);
+      const u = resolveReturnUrl(returnTo, cfg) ?? new URL("/", cfg.baseUrl); // re-validated; state could not have been tampered with, but belt and braces
       u.searchParams.set("allowlist", `${key}:${status}`);
       if (msg) u.searchParams.set("allowlist_msg", msg);
       return c.redirect(u.toString());

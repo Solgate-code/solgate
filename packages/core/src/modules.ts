@@ -1,15 +1,19 @@
 /**
  * Built-in module definitions. These are *descriptions only* — the actual
- * verification logic lives in @solana-allowlist/server (or your own verifier).
+ * verification logic lives in @solgate/server (or your own verifier).
  * Keeping definitions here lets the browser widget and the admin UI validate
  * configs and render forms without pulling in server dependencies.
  */
 import { z } from "zod";
 import type { ModuleDefinition } from "./types.js";
 
+
+/** Identity helper that lets TypeScript infer the config type from the schema. */
+export const defineModule = <T,>(m: ModuleDefinition<T>): ModuleDefinition<T> => m;
+
 const pubkey = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "Invalid Solana public key");
 
-export const WalletSignatureModule = {
+export const WalletSignatureModule = defineModule({
   id: "wallet-signature",
   label: "Wallet signature",
   description: "Prove ownership of the Solana wallet by signing a nonce. Implicit in every campaign.",
@@ -18,9 +22,9 @@ export const WalletSignatureModule = {
     /** Custom prefix shown in the signed message. */
     statement: z.string().max(200).optional(),
   }),
-} satisfies ModuleDefinition;
+});
 
-export const TokenBalanceModule = {
+export const TokenBalanceModule = defineModule({
   id: "token-balance",
   label: "SPL token balance",
   description: "Hold at least N units of an SPL / Token-2022 mint.",
@@ -33,9 +37,10 @@ export const TokenBalanceModule = {
     /** Count tokens in the wallet-owned associated + auxiliary accounts (default true). */
     includeAllAccounts: z.boolean().default(true),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ mint: c.mint, min: c.min }),
+});
 
-export const NftOwnershipModule = {
+export const NftOwnershipModule = defineModule({
   id: "nft-ownership",
   label: "NFT ownership",
   description: "Own at least N NFTs from a verified collection (or a specific mint).",
@@ -54,9 +59,10 @@ export const NftOwnershipModule = {
     .refine((c) => c.collection || c.mints?.length || c.creator, {
       message: "Provide collection, mints or creator",
     }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ collection: c.collection, min: c.min }),
+});
 
-export const XVerificationModule = {
+export const XVerificationModule = defineModule({
   id: "x-verify",
   label: "X (Twitter) verification",
   description: "Connect an X account via OAuth 2.0. Optionally require a follow.",
@@ -68,9 +74,10 @@ export const XVerificationModule = {
     minAccountAgeDays: z.number().int().nonnegative().default(0),
     minFollowers: z.number().int().nonnegative().default(0),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ follow: c.follow }),
+});
 
-export const DiscordVerificationModule = {
+export const DiscordVerificationModule = defineModule({
   id: "discord-verify",
   label: "Discord verification",
   description: "Connect Discord via OAuth 2.0 and (optionally) require guild membership / role.",
@@ -80,9 +87,10 @@ export const DiscordVerificationModule = {
     /** Role IDs; user needs any one of them. Requires a bot in the guild. */
     roleIds: z.array(z.string()).default([]),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ guildId: c.guildId, requiresRole: c.roleIds.length > 0 }),
+});
 
-export const TelegramVerificationModule = {
+export const TelegramVerificationModule = defineModule({
   id: "telegram-verify",
   label: "Telegram verification",
   description: "Verify via Telegram Login Widget; optionally require channel/group membership.",
@@ -91,9 +99,10 @@ export const TelegramVerificationModule = {
     /** @channel username or numeric chat id. Requires the bot to be a member/admin. */
     chatId: z.string().optional(),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ chatId: c.chatId?.startsWith("@") ? c.chatId : undefined }),
+});
 
-export const YouTubeVerificationModule = {
+export const YouTubeVerificationModule = defineModule({
   id: "youtube-verify",
   label: "YouTube subscription",
   description: "Connect Google and verify a subscription to a channel (youtube.readonly scope).",
@@ -101,9 +110,9 @@ export const YouTubeVerificationModule = {
   configSchema: z.object({
     channelId: z.string().min(1),
   }),
-} satisfies ModuleDefinition;
+});
 
-export const SocialTaskModule = {
+export const SocialTaskModule = defineModule({
   id: "social-task",
   label: "Social task (self-attested / link)",
   description:
@@ -117,7 +126,8 @@ export const SocialTaskModule = {
     /** Minimum seconds between opening the link and marking complete. */
     minDwellSeconds: z.number().int().nonnegative().default(5),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ url: c.url, label: c.label, requireProofUrl: c.requireProofUrl }),
+});
 
 export const QuizQuestionSchema = z.object({
   id: z.string().min(1),
@@ -129,7 +139,7 @@ export const QuizQuestionSchema = z.object({
   required: z.boolean().default(true),
 });
 
-export const QuizModule = {
+export const QuizModule = defineModule({
   id: "quiz",
   label: "Quiz / custom questions",
   description: "Ask questions. Score against answers or just collect responses.",
@@ -140,9 +150,10 @@ export const QuizModule = {
     passScore: z.number().min(0).max(1).default(1),
     maxAttempts: z.number().int().positive().default(3),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ maxAttempts: c.maxAttempts, questions: c.questions.map(({ answer: _a, ...q }) => q) }),
+});
 
-export const ReferralModule = {
+export const ReferralModule = defineModule({
   id: "referral",
   label: "Referral code",
   description: "Users enter a referral code from another participant; referrers earn points.",
@@ -155,9 +166,10 @@ export const ReferralModule = {
     /** Cap on credited referrals per referrer. */
     maxReferrals: z.number().int().positive().default(100),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ requireCode: c.requireCode }),
+});
 
-export const CaptchaModule = {
+export const CaptchaModule = defineModule({
   id: "captcha",
   label: "CAPTCHA",
   description: "Cloudflare Turnstile, hCaptcha or reCAPTCHA v3 token verification.",
@@ -168,9 +180,10 @@ export const CaptchaModule = {
     /** Minimum score for reCAPTCHA v3. */
     minScore: z.number().min(0).max(1).default(0.5),
   }),
-} satisfies ModuleDefinition;
+  publicConfig: (c) => ({ provider: c.provider, siteKey: c.siteKey }),
+});
 
-export const builtinModules: ModuleDefinition[] = [
+export const builtinModules: ModuleDefinition<any>[] = [
   WalletSignatureModule,
   TokenBalanceModule,
   NftOwnershipModule,

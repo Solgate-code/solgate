@@ -5,8 +5,8 @@ A module has two halves: a **definition** (id, label, config schema — safe for
 ```ts
 // modules/staked-sol.ts
 import { z } from "zod";
-import { ModuleRegistry, type ModuleDefinition } from "@solana-allowlist/core";
-import { pass, fail, type Verifier } from "@solana-allowlist/server";
+import { ModuleRegistry, type ModuleDefinition } from "@solgate/core";
+import { pass, fail, type Verifier } from "@solgate/server";
 
 const StakedSolModule = {
   id: "staked-sol",

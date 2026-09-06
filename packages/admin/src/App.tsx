@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, load, save, type Conn } from "./api.js";
+import { api, clear, load, save, type Conn } from "./api.js";
 import { templates } from "./templates.js";
 
 type Campaign = { id: string; name: string; type: string; requirements: { key: string; module: string; required?: boolean }[]; merkle: { enabled: boolean } };
@@ -7,7 +7,7 @@ type Campaign = { id: string; name: string; type: string; requirements: { key: s
 export function App() {
   const [conn, setConn] = useState<Conn | null>(load);
   if (!conn) return <Login onConnect={(c) => { save(c); setConn(c); }} />;
-  return <Dashboard conn={conn} onDisconnect={() => { localStorage.removeItem("sal-admin"); setConn(null); }} />;
+  return <Dashboard conn={conn} onDisconnect={() => { clear(); setConn(null); }} />;
 }
 
 function Login({ onConnect }: { onConnect(c: Conn): void }) {
@@ -77,7 +77,7 @@ function CampaignView({ conn, campaign, onChanged, onDeleted }: { conn: Conn; ca
 
 function EmbedSnippet({ conn, id }: { conn: Conn; id: string }) {
   const [open, setOpen] = useState(false);
-  const snippet = `<div data-allowlist data-base-url="${conn.baseUrl}" data-campaign="${id}"></div>\n<script src="https://unpkg.com/@solana-allowlist/embed/dist/embed.global.js" defer></script>\n<link rel="stylesheet" href="https://unpkg.com/@solana-allowlist/embed/dist/styles.css">`;
+  const snippet = `<div data-allowlist data-base-url="${conn.baseUrl}" data-campaign="${id}"></div>\n<script src="https://unpkg.com/@solgate/embed/dist/embed.global.js" defer></script>\n<link rel="stylesheet" href="https://unpkg.com/@solgate/embed/dist/styles.css">`;
   return (
     <div>
       <button className="btn" onClick={() => setOpen(!open)}>Embed code</button>
@@ -225,6 +225,9 @@ function Editor({ conn, existing, onSaved, onDeleted }: { conn: Conn; existing?:
 
 function Export({ conn, campaign }: { conn: Conn; campaign: Campaign }) {
   const [merkle, setMerkle] = useState<any>(null);
+  const [snaps, setSnaps] = useState<any[]>([]);
+  const loadSnaps = useCallback(() => api(conn, `/admin/campaigns/${campaign.id}/snapshots`).then(setSnaps), [conn, campaign.id]);
+  useEffect(() => { loadSnaps(); }, [loadSnaps]);
   const dl = (format: string) => window.open(`${conn.baseUrl}/admin/campaigns/${campaign.id}/export?format=${format}`); // opens with key? no — fetch + blob
   const download = async (format: string, all = false) => {
     const r = await fetch(`${conn.baseUrl}/admin/campaigns/${campaign.id}/export?format=${format}&all=${all}&evidence=true`, { headers: { "x-api-key": conn.apiKey } });
@@ -246,6 +249,12 @@ function Export({ conn, campaign }: { conn: Conn; campaign: Campaign }) {
           <button className="btn" onClick={() => download("txt")}>Wallet list (.txt)</button>
           <button className="btn" onClick={() => download("csv", true)}>CSV — all entries</button>
         </div>
+      </div>
+      <div className="panel">
+        <h2>Snapshots</h2>
+        <p className="muted">Freeze the eligible list, allocations and Merkle root. The public eligibility endpoint serves from the latest snapshot, so the root can't change mid-mint. Re-check on-chain requirements first.</p>
+        <button className="btn primary" onClick={() => api(conn, `/admin/campaigns/${campaign.id}/snapshot`, { method: "POST" }).then(loadSnaps)}>Take snapshot</button>
+        <table style={{ marginTop: 10 }}><tbody>{snaps.map((s) => <tr key={s.id}><td><code className="k">{s.id}</code></td><td className="muted">{new Date(s.createdAt).toLocaleString()}</td><td>{s.count} wallets</td><td>{s.totalAllocation} alloc</td><td className="addr">{s.merkle?.root ? s.merkle.root.slice(0, 16) + "…" : "—"}</td></tr>)}</tbody></table>
       </div>
       <div className="panel">
         <h2>Merkle tree</h2>

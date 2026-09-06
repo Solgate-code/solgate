@@ -27,6 +27,13 @@ export interface ModuleDefinition<TConfig = unknown> {
   category: "onchain" | "social" | "input" | "custom";
   /** If true, this module can be re-checked at any time (e.g. balances). Social links are usually not. */
   recheckable?: boolean;
+  /**
+   * Project the campaign config into what the browser may see. Config is
+   * PRIVATE BY DEFAULT: if this is omitted the widget receives `{}`. Only
+   * return fields the UI needs (labels, URLs, site keys) — never secrets or
+   * answers.
+   */
+  publicConfig?(config: TConfig): unknown;
 }
 
 /** A requirement is a module instance with concrete config inside a campaign. */
@@ -146,10 +153,14 @@ export interface Entry {
   wallet: string;
   /** Completion state keyed by requirement key. */
   results: Record<string, RequirementResult>;
+  /** Points not tied to a requirement (referral credits, admin bonuses). Included in `points`. */
+  bonusPoints?: number;
   /** Derived. */
   eligible: boolean;
   points: number;
   allocation: number;
+  /** Set once, the first time the entry became eligible. Drives FCFS ranking. */
+  eligibleAt?: number;
   /** Referral code owned by this wallet (issued on registration). */
   referralCode?: string;
   /** Wallet that referred this entry, if any. */
@@ -172,7 +183,8 @@ export type AllowlistEventType =
   | "requirement.passed"
   | "requirement.failed"
   | "campaign.updated"
-  | "campaign.exported";
+  | "campaign.exported"
+  | "campaign.snapshot";
 
 export interface AllowlistEvent<T = unknown> {
   id: string;

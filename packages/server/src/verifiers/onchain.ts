@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { NftOwnershipModule, TokenBalanceModule, WalletSignatureModule } from "@solana-allowlist/core";
-import { fail, pass, type Verifier } from "./types.js";
+import { NftOwnershipModule, TokenBalanceModule, WalletSignatureModule } from "@solgate/core";
+import { VerificationUnavailable, fail, pass, type Verifier } from "./types.js";
 
 type TokenCfg = z.infer<typeof TokenBalanceModule.configSchema>;
 type NftCfg = z.infer<typeof NftOwnershipModule.configSchema>;
@@ -17,8 +17,12 @@ async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T
   return j.result as T;
 }
 
-const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-const TOKEN_2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+/** Scale a UI amount (e.g. 12.5) to raw units as a BigInt, exactly. */
+export function toRawAmount(ui: number | string, decimals: number): bigint {
+  const [int, frac = ""] = String(ui).split(".");
+  const fracPadded = (frac + "0".repeat(decimals)).slice(0, decimals);
+  return BigInt(int || "0") * 10n ** BigInt(decimals) + BigInt(fracPadded || "0");
+}
 
 /** Wallet signature is verified at session creation; this verifier just records it. */
 export const walletSignatureVerifier: Verifier = {
@@ -28,25 +32,39 @@ export const walletSignatureVerifier: Verifier = {
   },
 };
 
+interface ParsedTokenAccount {
+  account: { data: { parsed: { info: { tokenAmount: { amount: string; decimals: number } } } } };
+}
+
+/**
+ * SPL / Token-2022 balance. Filtering by `mint` alone returns accounts from
+ * whichever token program owns that mint, so one query covers both programs.
+ * Amounts are compared as exact integers (raw units), never floats.
+ * RPC failures are surfaced as VerificationUnavailable — an outage must not
+ * be recorded as "user has zero tokens".
+ */
 export const tokenBalanceVerifier: Verifier<TokenCfg> = {
   moduleId: TokenBalanceModule.id,
   async verify({ requirement, config, wallet, cfg }) {
-    let total = 0;
-    for (const programId of [TOKEN_PROGRAM, TOKEN_2022]) {
-      const r = await rpc<{ value: { account: { data: { parsed: { info: { tokenAmount: { uiAmount: number | null } } } } } }[] }>(
-        cfg.solana.rpcUrl,
-        "getTokenAccountsByOwner",
-        [wallet, { mint: config.mint, programId }, { encoding: "jsonParsed" }],
-      ).catch(() => ({ value: [] }));
-      for (const acc of r.value) {
-        total += acc.account.data.parsed.info.tokenAmount.uiAmount ?? 0;
-        if (!config.includeAllAccounts) break;
-      }
+    let r: { value: ParsedTokenAccount[] };
+    try {
+      r = await rpc(cfg.solana.rpcUrl, "getTokenAccountsByOwner", [wallet, { mint: config.mint }, { encoding: "jsonParsed" }]);
+    } catch (e) {
+      throw new VerificationUnavailable(`Could not read token balance: ${(e as Error).message}`);
     }
-    const evidence = { mint: config.mint, balance: total, required: config.min };
-    return total >= config.min
+    let total = 0n;
+    let decimals = 0;
+    for (const acc of r.value) {
+      const t = acc.account.data.parsed.info.tokenAmount;
+      decimals = t.decimals;
+      total += BigInt(t.amount);
+      if (!config.includeAllAccounts) break;
+    }
+    const required = toRawAmount(config.min, decimals);
+    const evidence = { mint: config.mint, balanceRaw: total.toString(), decimals, required: config.min, accounts: r.value.length };
+    return total >= required
       ? pass(requirement.key, requirement.module, evidence)
-      : fail(requirement.key, requirement.module, `Need at least ${config.min}, found ${total}`, evidence);
+      : fail(requirement.key, requirement.module, `Need at least ${config.min}, found ${Number(total) / 10 ** decimals}`, evidence);
   },
 };
 
@@ -65,9 +83,12 @@ export const nftOwnershipVerifier: Verifier<NftCfg> = {
     const matches: string[] = [];
     let page = 1;
     while (page <= 10) {
-      const r = await rpc<{ items: DasAsset[]; total: number }>(cfg.solana.dasUrl!, "getAssetsByOwner", [
-        { ownerAddress: wallet, page, limit: 1000, displayOptions: { showCollectionMetadata: false } },
-      ]);
+      let r: { items: DasAsset[]; total: number };
+      try {
+        r = await rpc(cfg.solana.dasUrl!, "getAssetsByOwner", [{ ownerAddress: wallet, page, limit: 1000, displayOptions: { showCollectionMetadata: false } }]);
+      } catch (e) {
+        throw new VerificationUnavailable(`Could not read NFT holdings: ${(e as Error).message}`);
+      }
       for (const a of r.items) {
         if (a.burnt) continue;
         const inCollection =

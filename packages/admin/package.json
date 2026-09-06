@@ -1,6 +1,6 @@
 {
-  "name": "@solana-allowlist/admin",
-  "version": "0.1.0",
+  "name": "@solgate/admin",
+  "version": "0.2.0",
   "private": true,
   "description": "Self-hosted admin dashboard for the allowlist API.",
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@solana-allowlist/core": "workspace:*",
+    "@solgate/core": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -22,8 +22,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Solgate-code/solana-allowlist.git",
+    "url": "https://github.com/Solgate-code/solgate.git",
     "directory": "packages/admin"
   },
-  "homepage": "https://github.com/Solgate-code/solana-allowlist"
+  "homepage": "https://github.com/Solgate-code/solgate"
 }

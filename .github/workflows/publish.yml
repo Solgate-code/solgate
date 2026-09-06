@@ -8,10 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm, registry-url: https://registry.npmjs.org }
+        with: { node-version: 24, cache: pnpm, registry-url: https://registry.npmjs.org }
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm -r --filter './packages/*' --filter '!@solana-allowlist/admin' publish --access public --no-git-checks
+      - run: pnpm -r --filter './packages/*' --filter '!@solgate/admin' publish --access public --no-git-checks
         env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }

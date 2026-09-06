@@ -16,7 +16,9 @@ Base URL: your deployment. All bodies are JSON.
 | GET | `/oauth/:provider/callback` | provider redirect target |
 
 ## Integration
-| GET | `/campaigns/:id/eligibility/:wallet` | `{eligible, allocation, points, rank, merkle?: {root, proof}}` — set `protectEligibilityLookup` to require a read key |
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/campaigns/:id/eligibility/:wallet` | `{eligible, allocation, snapshot, merkle?: {root, proof}}`. Served from the latest snapshot when one exists (`?snapshot=<id>` pins one). `points`/`rank` only with a read key, or when `eligibilityLookup` is `"full"`. `"protected"` requires a key for everything. |
 
 ## Admin (`x-api-key`)
 | Method | Path |
@@ -26,7 +28,9 @@ Base URL: your deployment. All bodies are JSON.
 | GET | `/admin/campaigns/:id/stats` |
 | GET | `/admin/campaigns/:id/entries?page&limit&eligible&search` |
 | PATCH | `/admin/campaigns/:id/entries/:wallet/requirements/:key` `{passed, note}` |
-| POST | `/admin/campaigns/:id/recheck` `{wallets?}` |
+| POST | `/admin/campaigns/:id/recheck` `{wallets?}` → `{checked, changed, unavailable}` |
+| POST | `/admin/campaigns/:id/snapshot` → immutable `{id, count, totalAllocation, merkle}` |
+| GET | `/admin/campaigns/:id/snapshots`, `/admin/campaigns/:id/snapshots/:sid` |
 | GET | `/admin/campaigns/:id/export?format=csv|json|txt|merkle&all&evidence` |
 | GET/POST/DELETE | `/admin/webhooks`, `/admin/webhooks/:id`, `POST /admin/webhooks/:id/test` |
 | GET/POST/DELETE | `/admin/api-keys`, `/admin/api-keys/:id` |
@@ -41,5 +45,9 @@ Base URL: your deployment. All bodies are JSON.
 - `x-verify` / `discord-verify` / `youtube-verify`: driven by the OAuth callback, not called directly
 
 ## Webhook events
-`entry.created`, `entry.updated`, `entry.eligible`, `entry.ineligible`, `requirement.passed`, `requirement.failed`, `campaign.updated`, `campaign.exported`.
-Header `x-allowlist-signature: t=<unix>,v1=<hmac-sha256(secret, "<t>.<body>")>`. Verify with `verifyWebhookSignature()` from `@solana-allowlist/server`.
+`entry.created`, `entry.updated`, `entry.eligible`, `entry.ineligible`, `requirement.passed`, `requirement.failed`, `campaign.updated`, `campaign.exported`, `campaign.snapshot`.
+Webhook targets must be `https://` and may not point at localhost or private address ranges (`allowInsecureWebhooks` relaxes this for local development).
+
+## Errors
+`503 verification_unavailable` — an upstream (RPC, DAS, provider API) failed. Nothing was recorded; the client should retry. An outage is never persisted as a failed requirement.
+Header `x-allowlist-signature: t=<unix>,v1=<hmac-sha256(secret, "<t>.<body>")>`. Verify with `verifyWebhookSignature()` from `@solgate/server`.

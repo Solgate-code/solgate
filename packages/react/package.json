@@ -1,6 +1,6 @@
 {
-  "name": "@solana-allowlist/react",
-  "version": "0.1.0",
+  "name": "@solgate/react",
+  "version": "0.2.0",
   "description": "Embeddable React allowlist widget + headless client/hooks for Solana projects.",
   "license": "MIT",
   "type": "module",
@@ -25,7 +25,7 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@solana-allowlist/core": "workspace:*",
+    "@solgate/core": "workspace:*",
     "@wallet-standard/app": "^1.0.1",
     "@wallet-standard/base": "^1.0.1",
     "bs58": "^6.0.0"
@@ -38,8 +38,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Solgate-code/solana-allowlist.git",
+    "url": "https://github.com/Solgate-code/solgate.git",
     "directory": "packages/react"
   },
-  "homepage": "https://github.com/Solgate-code/solana-allowlist"
+  "homepage": "https://github.com/Solgate-code/solgate"
 }

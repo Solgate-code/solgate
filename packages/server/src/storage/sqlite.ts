@@ -1,5 +1,5 @@
-import type { Campaign, Entry } from "@solana-allowlist/core";
-import type { ApiKey, SocialLink, Storage, Webhook, WebhookDelivery } from "./types.js";
+import type { Campaign, Entry } from "@solgate/core";
+import type { ApiKey, Snapshot, SocialLink, Storage, Webhook, WebhookDelivery } from "./types.js";
 
 /**
  * SQLite adapter using better-sqlite3 (Node). Single-file, zero-ops.
@@ -29,6 +29,8 @@ export async function createSqliteStorage(file = "allowlist.db"): Promise<Storag
     CREATE TABLE IF NOT EXISTS webhooks (id TEXT PRIMARY KEY, json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS deliveries (id TEXT PRIMARY KEY, webhook_id TEXT, json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS api_keys (id TEXT PRIMARY KEY, json TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS snapshots (id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL, created_at INTEGER NOT NULL, json TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS snapshots_campaign ON snapshots(campaign_id, created_at);
   `);
   const j = <T>(row: { json: string } | undefined) => (row ? (JSON.parse(row.json) as T) : null);
 
@@ -88,20 +90,46 @@ export async function createSqliteStorage(file = "allowlist.db"): Promise<Storag
       db.prepare("DELETE FROM temp WHERE k=?").run(k);
     },
     async incrTemp(k, ttl) {
-      const cur = Number((await s.getTemp(k)) ?? 0) + 1;
-      const r = db.prepare("SELECT exp FROM temp WHERE k=?").get(k) as { exp: number } | undefined;
-      db.prepare("INSERT OR REPLACE INTO temp (k,v,exp) VALUES (?,?,?)").run(k, String(cur), r?.exp ?? Date.now() + ttl * 1000);
-      return cur;
+      // Single UPSERT = atomic under SQLite's write lock. Expired rows restart from 1.
+      const now = Date.now();
+      const r = db
+        .prepare(
+          `INSERT INTO temp (k,v,exp) VALUES (?, '1', ?)
+           ON CONFLICT(k) DO UPDATE SET
+             v   = CASE WHEN temp.exp < ? THEN '1' ELSE CAST(CAST(temp.v AS INTEGER) + 1 AS TEXT) END,
+             exp = CASE WHEN temp.exp < ? THEN excluded.exp ELSE temp.exp END
+           RETURNING v`,
+        )
+        .get(k, now + ttl * 1000, now, now) as { v: string };
+      return Number(r.v);
     },
     async getSocialLink(campaignId, provider, providerUserId) {
       return j<SocialLink>(
         db.prepare("SELECT json FROM social_links WHERE campaign_id=? AND provider=? AND provider_user_id=?").get(campaignId, provider, providerUserId) as never,
       );
     },
-    async putSocialLink(l) {
-      db.prepare("INSERT OR REPLACE INTO social_links (campaign_id,provider,provider_user_id,wallet,json) VALUES (?,?,?,?,?)").run(
-        l.campaignId, l.provider, l.providerUserId, l.wallet, JSON.stringify(l),
-      );
+    async claimSocialLink(l) {
+      // ON CONFLICT DO NOTHING: the PK enforces uniqueness; we then read back who owns it.
+      db.prepare(
+        "INSERT INTO social_links (campaign_id,provider,provider_user_id,wallet,json) VALUES (?,?,?,?,?) ON CONFLICT(campaign_id,provider,provider_user_id) DO NOTHING",
+      ).run(l.campaignId, l.provider, l.providerUserId, l.wallet, JSON.stringify(l));
+      const owner = (db.prepare("SELECT wallet FROM social_links WHERE campaign_id=? AND provider=? AND provider_user_id=?").get(l.campaignId, l.provider, l.providerUserId) as { wallet: string }).wallet;
+      return owner === l.wallet ? { ok: true } : { ok: false, owner };
+    },
+    async putSnapshot(snap: Snapshot) {
+      db.prepare("INSERT OR REPLACE INTO snapshots (id,campaign_id,created_at,json) VALUES (?,?,?,?)").run(snap.id, snap.campaignId, snap.createdAt, JSON.stringify(snap));
+    },
+    async getSnapshot(campaignId, id) {
+      const row = id
+        ? db.prepare("SELECT json FROM snapshots WHERE campaign_id=? AND id=?").get(campaignId, id)
+        : db.prepare("SELECT json FROM snapshots WHERE campaign_id=? ORDER BY created_at DESC LIMIT 1").get(campaignId);
+      return j<Snapshot>(row as never);
+    },
+    async listSnapshots(campaignId) {
+      return (db.prepare("SELECT json FROM snapshots WHERE campaign_id=? ORDER BY created_at DESC").all(campaignId) as { json: string }[]).map((r) => {
+        const { entries: _e, ...rest } = JSON.parse(r.json) as Snapshot;
+        return rest;
+      });
     },
     async listSocialLinksForWallet(campaignId, wallet) {
       return (db.prepare("SELECT json FROM social_links WHERE campaign_id=? AND wallet=?").all(campaignId, wallet) as { json: string }[]).map((r) => JSON.parse(r.json));

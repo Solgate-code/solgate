@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CaptchaModule, QuizModule, ReferralModule } from "@solana-allowlist/core";
+import { CaptchaModule, QuizModule, ReferralModule, evaluateEntry } from "@solgate/core";
 import { fail, pass, type Verifier } from "./types.js";
 
 /* ---------------- Quiz ---------------- */
@@ -9,9 +9,6 @@ export interface QuizInput {
 }
 export const quizVerifier: Verifier<QuizCfg, QuizInput> = {
   moduleId: QuizModule.id,
-  publicConfig(config) {
-    return { ...config, questions: config.questions.map(({ answer: _a, ...q }) => q) };
-  },
   async verify({ requirement, config, input, storage, campaign, wallet }) {
     const attemptsKey = `quiz:${campaign.id}:${wallet}:${requirement.key}`;
     const attempts = await storage.incrTemp(attemptsKey, 86_400);
@@ -60,22 +57,20 @@ export const referralVerifier: Verifier<RefCfg, ReferralInput> = {
     if (code === entry.referralCode) return fail(requirement.key, requirement.module, "You can't refer yourself");
     const referrer = await storage.findEntryByReferralCode(campaign.id, code);
     if (!referrer) return fail(requirement.key, requirement.module, "Unknown referral code");
-    const countKey = `refcount:${campaign.id}:${referrer.wallet}`;
-    const n = await storage.incrTemp(countKey, 60 * 60 * 24 * 365);
+    // Atomic counter caps credited referrals even under concurrent sign-ups.
+    const n = await storage.incrTemp(`refcount:${campaign.id}:${referrer.wallet}`, 60 * 60 * 24 * 365);
     if (n <= config.maxReferrals && config.referrerPoints > 0) {
-      // Credit the referrer via a synthetic result so it shows up in points/export.
-      const k = `${requirement.key}:credits`;
-      const prev = (referrer.results[k]?.evidence?.credits as number) ?? 0;
-      referrer.results[k] = {
-        key: k,
+      // Credits live in `bonusPoints`, which the engine includes in every
+      // recomputation — so they survive later re-evaluations.
+      referrer.bonusPoints = (referrer.bonusPoints ?? 0) + config.referrerPoints;
+      referrer.results[`${requirement.key}:credits`] = {
+        key: `${requirement.key}:credits`,
         module: "referral-credit",
         passed: true,
-        evidence: { credits: prev + 1, points: (prev + 1) * config.referrerPoints },
+        evidence: { referrals: n, bonusPoints: referrer.bonusPoints },
         checkedAt: Date.now(),
       };
-      referrer.points += config.referrerPoints;
-      referrer.updatedAt = Date.now();
-      await storage.putEntry(referrer);
+      await storage.putEntry(evaluateEntry(campaign, referrer));
     }
     entry.referredBy = referrer.wallet;
     return pass(requirement.key, requirement.module, { code, referredBy: referrer.wallet });
@@ -94,9 +89,6 @@ const endpoints = {
 } as const;
 export const captchaVerifier: Verifier<CaptchaCfg, CaptchaInput> = {
   moduleId: CaptchaModule.id,
-  publicConfig(config) {
-    return { provider: config.provider, siteKey: config.siteKey };
-  },
   async verify({ requirement, config, input, cfg, ip }) {
     const secret =
       config.provider === "turnstile"

@@ -1,8 +1,8 @@
 # Candy Machine allowlist guard
 
 1. Enable Merkle in your campaign config: `"merkle": { "enabled": true, "scheme": "candy-guard" }`
-2. Before mint, snapshot on-chain requirements: `POST /admin/campaigns/:id/recheck`
-3. Fetch the root: `GET /admin/campaigns/:id/export?format=merkle` → `{ root, proofs }`
+2. Before mint, re-check on-chain requirements: `POST /admin/campaigns/:id/recheck`
+3. Freeze the list: `POST /admin/campaigns/:id/snapshot` → `{ id, merkle: { root } }`. From now on the public eligibility endpoint serves proofs from this snapshot.
 4. Set the guard (Umi):
 
 ```ts

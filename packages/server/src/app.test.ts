@@ -4,7 +4,7 @@ import { sha512 } from "@noble/hashes/sha512";
 import bs58 from "bs58";
 import { createAllowlistApp } from "./app.js";
 import { MemoryStorage } from "./storage/memory.js";
-import { verifyMerkleProof } from "@solana-allowlist/core";
+import { verifyMerkleProof } from "@solgate/core";
 
 (ed.etc as { sha512Sync?: (...m: Uint8Array[]) => Uint8Array }).sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 

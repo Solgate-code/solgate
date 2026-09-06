@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>My Project — Allowlist</title>
-  <link rel="stylesheet" href="https://unpkg.com/@solana-allowlist/embed/dist/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@solgate/embed/dist/styles.css" />
   <style>
     body { font-family: Georgia, serif; background: #0e0b1a; color: #fff; display: grid; place-items: center; min-height: 100vh; margin: 0; }
     /* theme the widget to match the site */
@@ -12,7 +12,7 @@
 </head>
 <body>
   <div data-allowlist data-base-url="https://api.myproject.xyz" data-campaign="genesis-mint" data-theme="dark" data-telegram-bot="MyProjectBot"></div>
-  <script src="https://unpkg.com/@solana-allowlist/embed/dist/embed.global.js" defer></script>
+  <script src="https://unpkg.com/@solgate/embed/dist/embed.global.js" defer></script>
   <script>
     document.addEventListener("allowlist:eligible", (e) => console.log("eligible", e.detail));
   </script>

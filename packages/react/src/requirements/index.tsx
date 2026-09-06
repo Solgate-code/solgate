@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { RequirementResult } from "@solana-allowlist/core";
+import type { RequirementResult } from "@solgate/core";
 import type { PublicRequirement } from "../client.js";
 
 export interface ReqProps {

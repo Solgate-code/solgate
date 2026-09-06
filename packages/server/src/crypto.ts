@@ -59,7 +59,7 @@ export function signSession(secret: string, p: SessionPayload) {
 export function verifySession(secret: string, token: string): SessionPayload | null {
   const [body, mac] = token.split(".");
   if (!body || !mac) return null;
-  if (hmacHex(secret, body) !== mac) return null;
+  if (!safeEqual(hmacHex(secret, body), mac)) return null;
   try {
     const p = JSON.parse(new TextDecoder().decode(fromBase64url(body))) as SessionPayload;
     if (p.exp < Date.now()) return null;

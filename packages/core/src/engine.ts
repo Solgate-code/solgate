@@ -19,15 +19,15 @@ export function isCampaignOpen(c: Campaign, now = Date.now()) {
   return true;
 }
 
-/** Sum of points from passed requirements. */
-export function computePoints(c: Campaign, results: Record<string, RequirementResult>) {
-  return c.requirements.reduce((sum, r) => sum + (results[r.key]?.passed ? r.points ?? 0 : 0), 0);
+/** Sum of points from passed requirements plus any bonus points (referral credits etc.). */
+export function computePoints(c: Campaign, results: Record<string, RequirementResult>, bonusPoints = 0) {
+  return c.requirements.reduce((sum, r) => sum + (results[r.key]?.passed ? r.points ?? 0 : 0), 0) + Math.max(0, bonusPoints);
 }
 
 /** Eligible iff every required requirement passed and points >= minPoints. */
-export function computeEligibility(c: Campaign, results: Record<string, RequirementResult>) {
+export function computeEligibility(c: Campaign, results: Record<string, RequirementResult>, bonusPoints = 0) {
   const missing = c.requirements.filter((r) => r.required !== false && !results[r.key]?.passed).map((r) => r.key);
-  const points = computePoints(c, results);
+  const points = computePoints(c, results, bonusPoints);
   const eligible = missing.length === 0 && points >= (c.minPoints ?? 0);
   return { eligible, points, missing };
 }
@@ -54,17 +54,29 @@ export function computeAllocation(alloc: AllocationConfig, points: number, resul
 
 /** Recompute derived fields on an entry (pure). */
 export function evaluateEntry(c: Campaign, entry: Entry, now = Date.now()): Entry {
-  const { eligible, points } = computeEligibility(c, entry.results);
+  const { eligible, points } = computeEligibility(c, entry.results, entry.bonusPoints ?? 0);
   const allocation = eligible ? computeAllocation(c.allocation, points, entry.results) : 0;
-  return { ...entry, eligible, points, allocation, updatedAt: now };
+  // eligibleAt is sticky: first transition into eligibility wins the queue position.
+  const eligibleAt = entry.eligibleAt ?? (eligible ? now : undefined);
+  return { ...entry, eligible, points, allocation, eligibleAt, updatedAt: now };
+}
+
+/** Deterministic ordering for FCFS: eligibility time, then wallet as tie-breaker. */
+export function rankEntries(entries: Entry[]): Entry[] {
+  return [...entries].sort((a, b) => {
+    const ta = a.eligibleAt ?? Number.MAX_SAFE_INTEGER;
+    const tb = b.eligibleAt ?? Number.MAX_SAFE_INTEGER;
+    return ta !== tb ? ta - tb : a.wallet < b.wallet ? -1 : a.wallet > b.wallet ? 1 : 0;
+  });
 }
 
 /**
  * Apply campaign-wide caps (maxEntries, allocation.totalSupply) across all entries.
- * Entries are ranked by the time they first became eligible; returns a new array.
+ * Entries are ranked by `eligibleAt` (the moment they first became eligible),
+ * not by registration time; returns a new array.
  */
 export function applyCaps(c: Campaign, entries: Entry[]): Entry[] {
-  const sorted = [...entries].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = rankEntries(entries);
   let rank = 0;
   let supplyUsed = 0;
   return sorted.map((e) => {

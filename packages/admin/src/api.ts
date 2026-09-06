@@ -1,6 +1,8 @@
 export interface Conn { baseUrl: string; apiKey: string }
-export const load = (): Conn | null => { try { return JSON.parse(localStorage.getItem("sal-admin") ?? "null"); } catch { return null; } };
-export const save = (c: Conn) => localStorage.setItem("sal-admin", JSON.stringify(c));
+// Held in sessionStorage only: cleared when the tab closes, never persisted to disk.
+export const load = (): Conn | null => { try { return JSON.parse(sessionStorage.getItem("sal-admin") ?? "null"); } catch { return null; } };
+export const save = (c: Conn) => sessionStorage.setItem("sal-admin", JSON.stringify(c));
+export const clear = () => sessionStorage.removeItem("sal-admin");
 
 export async function api<T = any>(c: Conn, path: string, init: RequestInit = {}): Promise<T> {
   const r = await fetch(`${c.baseUrl.replace(/\/$/, "")}${path}`, { ...init, headers: { "content-type": "application/json", "x-api-key": c.apiKey, ...(init.headers ?? {}) } });

@@ -1,5 +1,7 @@
 /** Node entry: build config from env and start an HTTP server. */
 import { serve } from "@hono/node-server";
+import { getConnInfo } from "@hono/node-server/conninfo";
+import type { Context } from "hono";
 import { createAllowlistApp } from "./app.js";
 import { createSqliteStorage } from "./storage/sqlite.js";
 import { MemoryStorage } from "./storage/memory.js";
@@ -14,7 +16,10 @@ export async function configFromEnv(env: Record<string, string | undefined> = pr
     sessionSecret: env.SESSION_SECRET,
     adminApiKey: env.ADMIN_API_KEY,
     corsOrigins: env.CORS_ORIGINS ? env.CORS_ORIGINS.split(",").map((s) => s.trim()) : "*",
-    protectEligibilityLookup: env.PROTECT_ELIGIBILITY_LOOKUP === "true",
+    eligibilityLookup: (env.ELIGIBILITY_LOOKUP as "minimal" | "full" | "protected" | undefined) ?? "minimal",
+    trustProxy: (env.TRUST_PROXY as "none" | "cloudflare" | "x-forwarded-for" | undefined) ?? "none",
+    allowedReturnOrigins: env.ALLOWED_RETURN_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean),
+    allowInsecureWebhooks: env.ALLOW_INSECURE_WEBHOOKS === "true",
     solana: { rpcUrl: env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com", dasUrl: env.SOLANA_DAS_URL },
     oauth: {
       x: env.X_CLIENT_ID ? { clientId: env.X_CLIENT_ID, clientSecret: env.X_CLIENT_SECRET ?? "" } : undefined,
@@ -28,7 +33,7 @@ export async function configFromEnv(env: Record<string, string | undefined> = pr
 
 export async function startNodeServer(port = Number(process.env.PORT ?? 8787)) {
   const config = await configFromEnv();
-  const { app } = createAllowlistApp(config);
-  serve({ fetch: app.fetch, port }, () => console.log(`solana-allowlist API listening on http://localhost:${port}`));
+  const { app } = createAllowlistApp(config, { getClientIp: (c) => getConnInfo(c as Context).remote.address });
+  serve({ fetch: app.fetch, port }, () => console.log(`solgate API listening on http://localhost:${port}`));
   return app;
 }

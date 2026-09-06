@@ -1,6 +1,6 @@
 {
-  "name": "@solana-allowlist/embed",
-  "version": "0.1.0",
+  "name": "@solgate/embed",
+  "version": "0.2.0",
   "description": "Drop-in <script> embed of the allowlist widget for sites that don't use React (Webflow, Framer, WordPress, plain HTML).",
   "license": "MIT",
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@solana-allowlist/react": "workspace:*",
+    "@solgate/react": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -20,8 +20,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Solgate-code/solana-allowlist.git",
+    "url": "https://github.com/Solgate-code/solgate.git",
     "directory": "packages/embed"
   },
-  "homepage": "https://github.com/Solgate-code/solana-allowlist"
+  "homepage": "https://github.com/Solgate-code/solgate"
 }

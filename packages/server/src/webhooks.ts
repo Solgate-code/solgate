@@ -1,6 +1,6 @@
-import type { AllowlistEvent, AllowlistEventType } from "@solana-allowlist/core";
+import type { AllowlistEvent, AllowlistEventType } from "@solgate/core";
 import type { Storage } from "./storage/types.js";
-import { hmacHex, randomId } from "./crypto.js";
+import { hmacHex, randomId, safeEqual } from "./crypto.js";
 
 /**
  * Webhook dispatcher. Payloads are signed with HMAC-SHA256 over
@@ -70,5 +70,32 @@ export function verifyWebhookSignature(secret: string, header: string, body: str
   const parts = Object.fromEntries(header.split(",").map((p) => p.split("=") as [string, string]));
   const ts = Number(parts.t);
   if (!ts || Math.abs(Date.now() / 1000 - ts) > toleranceSeconds) return false;
-  return hmacHex(secret, `${ts}.${body}`) === parts.v1;
+  return safeEqual(hmacHex(secret, `${ts}.${body}`), parts.v1 ?? "");
+}
+
+/**
+ * Reject webhook targets that could reach internal infrastructure (SSRF).
+ * Blocks non-HTTPS (unless `allowHttp`), localhost, link-local/metadata and
+ * RFC1918 literals. Hostnames that *resolve* to private IPs are not caught
+ * here — put the API behind an egress policy for that.
+ */
+export function assertSafeWebhookUrl(raw: string, opts: { allowInsecure?: boolean } = {}) {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+  if (opts.allowInsecure && (u.protocol === "http:" || u.protocol === "https:")) return u; // development only
+  if (u.protocol !== "https:") throw new Error("Webhook URL must use https");
+  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal") || h === "0.0.0.0" || h === "::1" || h === "::") throw new Error("Webhook URL may not target localhost");
+  const m = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127))
+      throw new Error("Webhook URL may not target a private network");
+  }
+  if (/^(fc|fd|fe80)/i.test(h)) throw new Error("Webhook URL may not target a private network");
+  return u;
 }
