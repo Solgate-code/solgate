@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Getting Started — SolGate</title><link rel="stylesheet" href="styles.css"></head><body><nav class="nav"><div class="wrap"><a class="brand" href="index.html">SolGate</a><div class="links"><a href="getting-started.html">Getting Started</a><a href="security.html">Security</a><a href="https://github.com/Solgate-code/solgate">GitHub</a><a href="https://www.npmjs.com/~solgate">npm</a></div></div></nav><main><section class="hero"><div class="wrap"><div class="eyebrow">Documentation</div><h1>Getting Started</h1><p>Install SolGate, start the self-hosted API and embed the allowlist experience in your own site.</p></div></section><section class="section"><div class="wrap"><h2>1. Clone and build</h2><pre><code>git clone https://github.com/Solgate-code/solgate.git
+cd solgate
+pnpm install
+pnpm build</code></pre><h2>2. Start the API</h2><pre><code>cd packages/server
+cp .env.example .env
+# Configure SESSION_SECRET, ADMIN_API_KEY,
+# SOLANA_RPC_URL and any OAuth credentials you need.
+pnpm dev</code></pre><p class="muted">The development API runs at <code>http://localhost:8787</code> by default.</p><h2>3. Start the admin interface</h2><pre><code>cd ../admin
+pnpm dev</code></pre><p class="muted">Use the admin interface to configure campaigns, requirements, allocation rules, exports and snapshots.</p><h2>4. Embed with React</h2><pre><code>npm install @solgate/react</code></pre><pre><code>import { AllowlistWidget } from "@solgate/react";
+import "@solgate/react/styles.css";
+
+&lt;AllowlistWidget
+  baseUrl="https://api.myproject.xyz"
+  campaignId="genesis-mint"
+  theme="dark"
+/&gt;</code></pre><h2>5. Or embed without React</h2><pre><code>&lt;div
+  data-allowlist
+  data-base-url="https://api.myproject.xyz"
+  data-campaign="genesis-mint"&gt;
+&lt;/div&gt;
+
+&lt;script
+  src="https://unpkg.com/@solgate/embed/dist/embed.global.js"
+  defer&gt;
+&lt;/script&gt;</code></pre><h2>Campaign model</h2><p>Campaigns are defined as JSON. Requirements can include wallet signatures, token or NFT ownership, social verification, quizzes, captchas and custom modules. Required checks must pass before the entry becomes eligible.</p><pre><code>{
+  "id": "genesis-mint",
+  "name": "Genesis Mint",
+  "type": "nft-mint",
+  "requirements": [
+    { "key": "wallet", "module": "wallet-signature", "config": {} },
+    { "key": "telegram", "module": "telegram-verify", "config": {} },
+    { "key": "quiz", "module": "quiz", "config": { "passScore": 1 } }
+  ],
+  "allocation": {
+    "mode": "tiered",
+    "maxPerWallet": 1
+  }
+}</code></pre><h2>Production checklist</h2><div class="note">Use a production database, strong secrets, restricted OAuth return origins, HTTPS, rate limiting, a reliable Solana RPC endpoint, and snapshot your eligible set before mint. Review the repository security documentation before launch.</div><div class="actions"><a class="btn primary" href="https://github.com/Solgate-code/solgate/blob/main/docs/api.md">API reference</a><a class="btn" href="https://github.com/Solgate-code/solgate/blob/main/docs/custom-modules.md">Custom modules</a></div></div></section></main><footer><div class="wrap"><a href="index.html">SolGate</a> · Open-source eligibility infrastructure for Solana.</div></footer></body></html>
