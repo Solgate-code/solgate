@@ -1,11 +1,11 @@
-# Solana Allowlist
-
-An open-source, modular allowlist and eligibility framework for Solana projects.
-Embed it in **your own website**; run it on **your own server**; export **your own data**.
+# SolGate
+**Open-source eligibility and access infrastructure for Solana.**
+SolGate is a modular, self-hosted framework for building allowlists, wallet verification, token gating, NFT eligibility, airdrops eligibility, community campaigns, and access-control flows on Solana.
+Embed it in **your own website**, run it on **your own server**, and retain control of **your own data and infrastructure**.
 No launchpad. No hosted platform. No lock-in.
 
 ```
-Solana Allowlist SDK
+Solgate SDK
         │
         ├── Wallet Signature          (SIWS-style nonce + ed25519)
         ├── Token Holding Check       (SPL + Token-2022 via RPC)
