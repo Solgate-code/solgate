@@ -55,6 +55,7 @@ The goal of this project is to make the self-hosted path *easier* than the hoste
 ## Quick start
 
 ```bash
+git clone https://github.com/Solgate-code/solana-allowlist.git && cd solana-allowlist
 pnpm install && pnpm build
 
 # 1. API
@@ -148,6 +149,10 @@ We'd rather be honest about the last two rows than pretend, which is also why "v
 - Optional on-chain registration (record eligibility as a PDA for fully trustless mints)
 - Admin: visual requirement builder, entry timeline, audit log
 - i18n for the widget
+
+## Contributing
+
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The easiest first contribution is a new module; see [docs/custom-modules.md](docs/custom-modules.md).
 
 ## License
 
