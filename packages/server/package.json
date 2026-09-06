@@ -1,6 +1,6 @@
 {
   "name": "@solgate/server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Self-hostable allowlist API: wallet auth, on-chain + social verification, exports, webhooks. Runs on Node, Vercel, Cloudflare Workers or Deno.",
   "license": "MIT",
   "type": "module",
