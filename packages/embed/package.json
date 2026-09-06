@@ -1,0 +1,14 @@
+{
+  "name": "@solana-allowlist/embed",
+  "version": "0.1.0",
+  "description": "Drop-in <script> embed of the allowlist widget for sites that don't use React (Webflow, Framer, WordPress, plain HTML).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/embed.global.js",
+  "scripts": {
+    "build": "tsup src/embed.tsx --format iife --global-name SolanaAllowlist --minify --clean && cp ../react/src/styles.css dist/styles.css",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "@solana-allowlist/react": "workspace:*", "react": "^18.3.1", "react-dom": "^18.3.1" },
+  "devDependencies": { "@types/react": "^18.3.11", "@types/react-dom": "^18.3.0" }
+}

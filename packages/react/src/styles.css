@@ -1,0 +1,87 @@
+/*
+  Widget styles. Everything hangs off a few custom properties so the host
+  site's own design shows through. Override them on `.sal` or any ancestor.
+*/
+.sal {
+  --sal-accent: #6b4bff;
+  --sal-fg: #14131a;
+  --sal-muted: #6a6878;
+  --sal-bg: #ffffff;
+  --sal-line: #e6e4ee;
+  --sal-ok: #1e8f5a;
+  --sal-warn: #b3651a;
+  --sal-radius: 12px;
+  --sal-font: inherit;
+
+  font-family: var(--sal-font);
+  color: var(--sal-fg);
+  background: var(--sal-bg);
+  border: 1px solid var(--sal-line);
+  border-radius: var(--sal-radius);
+  max-width: 560px;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.45;
+  font-size: 15px;
+}
+.sal *, .sal *::before, .sal *::after { box-sizing: border-box; }
+.sal[data-theme="dark"] {
+  --sal-fg: #f2f1f7; --sal-muted: #9c9aae; --sal-bg: #16151c; --sal-line: #2b2a36;
+}
+
+.sal-head { padding: 22px 22px 16px; border-bottom: 1px solid var(--sal-line); }
+.sal-head h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.sal-head p { margin: 0; color: var(--sal-muted); }
+.sal-window { margin-top: 10px; font-size: 13px; color: var(--sal-muted); }
+
+/* progress rail: one segment per requirement, fills as they complete */
+.sal-rail { display: flex; gap: 4px; padding: 14px 22px 0; }
+.sal-rail i { flex: 1; height: 4px; border-radius: 2px; background: var(--sal-line); transition: background 240ms ease; }
+.sal-rail i[data-on="true"] { background: var(--sal-accent); }
+.sal-rail i[data-optional="true"][data-on="false"] { background: repeating-linear-gradient(90deg, var(--sal-line) 0 4px, transparent 4px 8px); }
+@media (prefers-reduced-motion: reduce) { .sal-rail i { transition: none; } }
+
+.sal-list { list-style: none; margin: 0; padding: 8px 0; }
+.sal-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; padding: 14px 22px; border-bottom: 1px dashed var(--sal-line); }
+.sal-item:last-child { border-bottom: 0; }
+.sal-item[data-locked="true"] { opacity: 0.55; }
+.sal-mark { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--sal-line); display: grid; place-items: center; font-size: 12px; margin-top: 1px; color: var(--sal-bg); }
+.sal-mark[data-state="passed"] { background: var(--sal-ok); border-color: var(--sal-ok); }
+.sal-mark[data-state="pending"] { border-color: var(--sal-warn); color: var(--sal-warn); }
+.sal-item-body { min-width: 0; }
+.sal-item-title { font-weight: 600; margin: 0; }
+.sal-item-desc { margin: 2px 0 0; color: var(--sal-muted); font-size: 13.5px; }
+.sal-item-meta { margin: 2px 0 0; color: var(--sal-muted); font-size: 12.5px; }
+.sal-reason { margin: 6px 0 0; font-size: 13px; color: var(--sal-warn); }
+.sal-item-action { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.sal-points { font-size: 12px; color: var(--sal-muted); white-space: nowrap; }
+
+.sal-btn {
+  font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--sal-accent); background: var(--sal-accent); color: #fff; cursor: pointer; white-space: nowrap;
+}
+.sal-btn:disabled { opacity: 0.55; cursor: default; }
+.sal-btn[data-variant="ghost"] { background: transparent; color: var(--sal-accent); }
+.sal-btn:focus-visible, .sal-input:focus-visible, .sal-wallet:focus-visible { outline: 2px solid var(--sal-accent); outline-offset: 2px; }
+
+.sal-input { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--sal-line); background: var(--sal-bg); color: var(--sal-fg); width: 100%; }
+.sal-form { display: grid; gap: 10px; margin-top: 10px; }
+.sal-form fieldset { border: 0; padding: 0; margin: 0; }
+.sal-form legend { font-weight: 500; margin-bottom: 6px; }
+.sal-form label { display: flex; gap: 8px; align-items: center; font-size: 14px; padding: 3px 0; }
+
+.sal-foot { padding: 16px 22px 20px; border-top: 1px solid var(--sal-line); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sal-status { font-weight: 600; }
+.sal-status[data-ok="true"] { color: var(--sal-ok); }
+.sal-foot small { color: var(--sal-muted); }
+.sal-error { margin: 0 22px 12px; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--sal-warn) 12%, transparent); color: var(--sal-warn); font-size: 13.5px; }
+
+.sal-wallets { display: grid; gap: 8px; padding: 18px 22px 22px; }
+.sal-wallet { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--sal-line); border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.sal-wallet img { width: 24px; height: 24px; border-radius: 6px; }
+.sal-wallet:hover { border-color: var(--sal-accent); }
+.sal-empty { padding: 18px 22px 22px; color: var(--sal-muted); }
+.sal-empty a { color: var(--sal-accent); }
+.sal-addr { font-variant-numeric: tabular-nums; }
+.sal-ref { display: flex; gap: 8px; align-items: center; }
+.sal-ref code { padding: 2px 8px; border: 1px dashed var(--sal-line); border-radius: 6px; font-size: 13px; }
