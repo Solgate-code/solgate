@@ -16,6 +16,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom && cp src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit"
