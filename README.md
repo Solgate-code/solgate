@@ -1,6 +1,6 @@
 # SolGate
 **Open-source eligibility and access infrastructure for Solana.**
-SolGate is a modular, self-hosted framework for building allowlists, wallet verification, token gating, NFT eligibility, airdrops eligibility, community campaigns, and access-control flows on Solana.
+SolGate is a modular, self-hosted framework for building allowlists, wallet verification, token gating, NFT eligibility, airdrop eligibility, community campaigns, and access-control flows on Solana.
 Embed it in **your own website**, run it on **your own server**, and retain control of **your own data and infrastructure**.
 No launchpad. No hosted platform. No lock-in.
 
